@@ -1,16 +1,68 @@
-﻿-- TẠO DATABASE
+﻿-- ======================================================================
+-- 0. TẠO DATABASE
+-- ======================================================================
 USE master;
 GO
-IF DB_ID('smarthome') IS NOT NULL
+
+-- Kiểm tra nếu database tồn tại thì xóa đi để tạo mới (tránh lỗi conflict dữ liệu cũ)
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'smarthome')
 BEGIN
+    -- Đưa về chế độ Single User để kick hết kết nối cũ ra trước khi drop
     ALTER DATABASE smarthome SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE smarthome;
 END
 GO
+
+-- Tạo lại database mới
 CREATE DATABASE smarthome;
 GO
+
+-- ======================================================================
+-- 1. DROP LOGIN VÀ USER NẾU TỒN TẠI
+-- ======================================================================
 USE smarthome;
 GO
+
+-- Xóa database user nếu tồn tại
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'sManager')
+BEGIN
+    DROP USER [sManager];
+    PRINT N'Database user sManager đã bị xóa.';
+END
+GO
+
+USE master;
+GO
+
+-- Xóa login nếu tồn tại
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'sManager')
+BEGIN
+    DROP LOGIN [sManager];
+    PRINT N'Login sManager đã bị xóa.';
+END
+GO
+
+-- ======================================================================
+-- 2. TẠO LẠI LOGIN VÀ DATABASE USER
+-- ======================================================================
+-- Tạo login mới
+CREATE LOGIN [sManager] WITH PASSWORD = N'Nhom6251';
+PRINT N'Login sManager đã được tạo.';
+GO
+
+-- Tạo database user
+USE smarthome;
+GO
+
+CREATE USER [sManager] FOR LOGIN [sManager];
+PRINT N'Database user sManager đã được tạo.';
+GO
+
+-- Gán quyền db_owner
+ALTER ROLE db_owner ADD MEMBER [sManager];
+PRINT N'Đã gán quyền db_owner cho sManager.';
+GO
+
 
 -- NHÀ
 CREATE TABLE homes (
@@ -67,7 +119,7 @@ CREATE TABLE sensors (
 CREATE TABLE sensor_data (
     id              BIGINT IDENTITY(1,1) PRIMARY KEY,
     sensor_id       BIGINT NOT NULL FOREIGN KEY REFERENCES sensors(sensor_id),
-    value           DECIMAL(12,4) NOT NULL,
+    value           DECIMAL(12,1) NOT NULL,
     recorded_at     DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
     is_processed    BIT DEFAULT 0 -- Dùng cho Automation Worker check
 );
@@ -76,7 +128,7 @@ CREATE INDEX IX_sensor_data_time ON sensor_data(sensor_id, recorded_at DESC);
 -- BẢNG GIÁ TRỊ MỚI NHẤT (Cho Real-time Dashboard)
 CREATE TABLE latest_sensor_values (
     sensor_id       BIGINT PRIMARY KEY FOREIGN KEY REFERENCES sensors(sensor_id),
-    current_value   DECIMAL(12,4),
+    current_value   DECIMAL(12,1),
     recorded_at     DATETIMEOFFSET NOT NULL,
     updated_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
 );
@@ -144,23 +196,32 @@ CREATE TABLE alerts (
 GO
 
 -- TRIGGER TỰ ĐỘNG CẬP NHẬT LATEST VALUE
-CREATE TRIGGER TRG_Sync_Latest_Sensor_Value
+CREATE OR ALTER TRIGGER TRG_Sync_Latest_Sensor_Value
 ON sensor_data
 AFTER INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
+
     MERGE latest_sensor_values AS target
-    USING (SELECT sensor_id, value, recorded_at FROM inserted) AS source
-    ON (target.sensor_id = source.sensor_id)
+    USING (
+        SELECT sensor_id, MAX(recorded_at) AS recorded_at, MAX(value) AS value
+        FROM inserted
+        GROUP BY sensor_id
+    ) AS source
+    ON target.sensor_id = source.sensor_id
+
     WHEN MATCHED THEN
-        UPDATE SET current_value = source.value, recorded_at = source.recorded_at, updated_at = SYSDATETIMEOFFSET()
+        UPDATE SET 
+            current_value = source.value,
+            recorded_at = source.recorded_at,
+            updated_at = SYSDATETIMEOFFSET()
+
     WHEN NOT MATCHED THEN
         INSERT (sensor_id, current_value, recorded_at)
         VALUES (source.sensor_id, source.value, source.recorded_at);
 END;
 GO
-
 -- TRIGGER TỰ ĐỘNG HÓA LOG
 CREATE TRIGGER TRG_Log_Device_Changes
 ON devices
@@ -181,25 +242,23 @@ END;
 GO
 
 -- FUNCTION ĐỊNH DẠNG DỮ LIỆU TỪ FILE CSV
-CREATE FUNCTION FN_Get_Sensor_Data_For_Export (
+CREATE PROCEDURE SP_Get_Sensor_Data_For_Export
     @SensorID BIGINT,
     @FromDate DATETIMEOFFSET,
     @ToDate DATETIMEOFFSET
-)
-RETURNS TABLE
 AS
-RETURN (
+BEGIN
     SELECT 
-        -- Tạo mã ID giả lập hoặc dùng ID gốc (Dạng chuỗi như mẫu của bạn)
-        UPPER(REPLACE(CAST(NEWID() AS NVARCHAR(50)), '-', '')) AS [id], 
-        sd.value AS [value],
-        sd.sensor_id AS [feed_id], -- Map sensor_id sang feed_id
-        FORMAT(sd.recorded_at, 'yyyy-MM-dd HH:mm:ss') + ' UTC' AS [created_at]
+        UPPER(REPLACE(CAST(NEWID() AS NVARCHAR(50)), '-', '')) AS id,
+        sd.value,
+        sd.sensor_id AS feed_id,
+        FORMAT(sd.recorded_at, 'yyyy-MM-dd HH:mm:ss') + ' UTC' AS created_at
     FROM sensor_data sd
     WHERE sd.sensor_id = @SensorID 
       AND sd.recorded_at BETWEEN @FromDate AND @ToDate
-);
-GO
+END
+
+GO 
 
 -- PROCEDURE KIỂM TRA VÀ THỰC THI LỊCH TRÌNH
 CREATE PROCEDURE SP_Process_Schedules
@@ -229,3 +288,108 @@ BEGIN
       AND ABS(DATEDIFF(MINUTE, time_start, @CurrentTime)) <= 1;
 END;
 GO
+
+-- ======================================================================
+-- SAMPLE DATA
+-- ======================================================================
+
+-- HOME
+INSERT INTO homes (home_name, address)
+VALUES (N'Nhà Thông Minh BK', N'TP.HCM');
+
+-- USER
+INSERT INTO users (home_id, username, password_hash, email, phone, role)
+VALUES 
+(1, 'admin', '123456', 'admin@smarthome.com', '0900000000', 'owner'),
+(1, 'user1', '123456', 'user1@smarthome.com', '0900000001', 'user');
+
+-- DEVICES
+INSERT INTO devices (user_id, name, type, location, mqtt_topic_pub, mqtt_topic_sub, connection_status, power_status)
+VALUES
+(1, N'Đèn phòng khách', 'light', N'Phòng khách', 'home/light1/set', 'home/light1/status', 'online', 'off'),
+(1, N'Quạt phòng ngủ', 'fan', N'Phòng ngủ', 'home/fan1/set', 'home/fan1/status', 'online', 'on');
+
+-- SENSORS
+INSERT INTO sensors (user_id, name, type, unit, mqtt_topic)
+VALUES
+(1, N'Cảm biến nhiệt độ', 'temperature', '°C', 'home/temp1'),
+(1, N'Cảm biến độ ẩm', 'humidity', '%', 'home/humidity1'),
+(1, N'Cảm biến ánh sáng', 'light', 'lux', 'home/light_sensor');
+
+-- SENSOR DATA
+INSERT INTO sensor_data (sensor_id, value)
+VALUES
+(1, 28.5),
+(1, 29.1),
+(2, 65.2),
+(2, 70.4),
+(3, 300),
+(3, 450);
+
+
+-- AUTOMATION RULE
+INSERT INTO automation_rules (user_id, name)
+VALUES
+(1, N'Tự bật quạt khi nóng');
+
+-- AUTOMATION CONDITION
+INSERT INTO automation_conditions (rule_id, sensor_id, operator, target_value)
+VALUES
+(1, 1, '>', 30);
+
+-- AUTOMATION ACTION
+INSERT INTO automation_actions (rule_id, device_id, action_type)
+VALUES
+(1, 2, 'turn_on');
+
+-- SCHEDULE
+INSERT INTO schedules (device_id, name, action_type, time_start, days_of_week)
+VALUES
+(1, N'Bật đèn buổi tối', 'turn_on', '18:00', '2,3,4,5,6,7');
+
+-- ALERT
+INSERT INTO alerts (sensor_id, severity, message)
+VALUES
+(1, 'warning', N'Nhiệt độ cao');
+
+-- ======================================================================
+-- SHOW DATA
+-- ======================================================================
+
+PRINT '===== HOMES ====='
+SELECT * FROM homes;
+
+PRINT '===== USERS ====='
+SELECT * FROM users;
+
+PRINT '===== DEVICES ====='
+SELECT * FROM devices;
+
+PRINT '===== SENSORS ====='
+SELECT * FROM sensors;
+
+PRINT '===== SENSOR DATA ====='
+SELECT * FROM sensor_data;
+
+PRINT '===== LATEST SENSOR VALUES ====='
+SELECT * FROM latest_sensor_values;
+
+PRINT '===== AUTOMATION RULES ====='
+SELECT * FROM automation_rules;
+
+PRINT '===== AUTOMATION CONDITIONS ====='
+SELECT * FROM automation_conditions;
+
+PRINT '===== AUTOMATION ACTIONS ====='
+SELECT * FROM automation_actions;
+
+PRINT '===== SCHEDULES ====='
+SELECT * FROM schedules;
+
+PRINT '===== ALERTS ====='
+SELECT * FROM alerts;
+
+PRINT '===== ACTIVITY LOGS ====='
+SELECT * FROM activity_logs;
+
+
