@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import socket from "../socket/socket";
 import axios from "../api/axios";
+import ChartPage from "./Chart";
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
@@ -87,7 +88,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {tab === "chart" && <div>Chart (làm tiếp sau)</div>}
+        {tab === "chart" && <ChartPage />}
       </div>
     </div>
   );

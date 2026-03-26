@@ -8,13 +8,8 @@ export default function Sidebar() {
   return (
     <div className="w-64 h-screen bg-white border-r flex flex-col p-4">
       {/* Logo */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-center mb-6">
         <h1 className="font-bold text-lg">BK SMARTHOME</h1>
-
-        <div className="flex gap-2">
-          <span className="cursor-pointer">🔔</span>
-          <span className="cursor-pointer">⚙️</span>
-        </div>
       </div>
 
       {/* User */}
