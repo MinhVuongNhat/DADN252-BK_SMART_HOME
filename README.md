@@ -1,1 +1,64 @@
-# BK SmartHome
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+Cấu trúc thư mục:
+layout/
+  Sidebar.jsx
+
+pages/
+  Dashboard.jsx
+  Devices.jsx
+  Logs.jsx
+  Profile.jsx
+
+components/
+  cards/
+    StatCard.jsx
+    SensorCard.jsx
+    DeviceControl.jsx
+  charts/
+    RealtimeChart.jsx
+
+hooks/
+  useSocket.js
+
+api/
+  dashboard.api.js
+  device.api.js
+
+📊 Dashboard APIs
+1. Tổng quan
+GET /api/dashboard/summary
+Response json:
+{
+  "totalDevices": 8,
+  "totalSensors": 3,
+  "alerts": 5
+}
+
+2. Sensor realtime (latest)
+GET /api/sensors/latest
+lấy từ latest_sensor_values
+
+3. Chart data
+GET /api/sensors/history?sensorType=temperature
+lấy từ sensor_data
+
+4. Device control
+POST /api/devices/:id/control
+json Body:
+{
+  "action": "turn_on"
+}
+5. Alerts
+GET /api/alerts?unresolved=true
+
+6. Realtime (Socket.io)
+Frontend:
+socket.on("sensor-data", (data) => {
+  updateChart(data);
+});
+
+Backend:
+io.emit("sensor-data", data);
