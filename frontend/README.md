@@ -75,3 +75,15 @@ socket.on("sensor-data", (data) => {
 
 Backend:
 io.emit("sensor-data", data);
+
+📊 Device APIs
+GET /devices
+[
+  {
+    "id": 1,
+    "name": "Đèn",
+    "type": "light",
+    "power_status": "on",
+    "control_mode": "manual"
+  }
+]

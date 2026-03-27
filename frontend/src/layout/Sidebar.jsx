@@ -1,9 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [openUser, setOpenUser] = useState(false);
+
+  const menu = [
+    { label: "Trang chủ", path: "/dashboard" },
+    { label: "Quản lý thiết bị", path: "/devices" },
+    { label: "Lịch sử", path: "/logs" },
+    { label: "Thông tin cá nhân", path: "/profile" },
+  ];
 
   return (
     <div className="w-64 h-screen bg-white border-r flex flex-col p-4">
@@ -45,10 +53,14 @@ export default function Sidebar() {
 
       {/* Menu */}
       <div className="flex flex-col gap-2 text-gray-700">
-        <MenuItem label="Trang chủ" onClick={() => navigate("/")} active />
-        <MenuItem label="Quản lý thiết bị" onClick={() => navigate("/devices")} />
-        <MenuItem label="Lịch sử" onClick={() => navigate("/logs")} />
-        <MenuItem label="Thông tin cá nhân" onClick={() => navigate("/profile")} />
+        {menu.map((item) => (
+          <MenuItem
+            key={item.path}
+            label={item.label}
+            onClick={() => navigate(item.path)}
+            active={location.pathname === item.path}
+          />
+        ))}
       </div>
     </div>
   );
@@ -58,8 +70,10 @@ function MenuItem({ label, onClick, active }) {
   return (
     <div
       onClick={onClick}
-      className={`p-2 rounded cursor-pointer ${
-        active ? "bg-blue-100 text-blue-600 font-semibold" : "hover:bg-gray-100"
+      className={`p-2 rounded cursor-pointer transition ${
+        active
+          ? "bg-blue-100 text-blue-600 font-semibold"
+          : "hover:bg-gray-100"
       }`}
     >
       {label}

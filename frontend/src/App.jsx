@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
+import Devices from "./pages/Devices";
 
 export default function App() {
   return (
@@ -9,7 +10,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
 
         {/* Placeholder pages */}
-        <Route path="/devices" element={<div>Devices Page</div>} />
+        <Route path="/devices" element={<Devices />} />
         <Route path="/logs" element={<div>Logs Page</div>} />
         <Route path="/profile" element={<div>Profile Page</div>} />
 

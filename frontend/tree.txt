@@ -1,0 +1,56 @@
+Folder PATH listing for volume Windows
+C:.
+|   .gitignore
+|   eslint.config.js
+|   index.html
+|   package-lock.json
+|   package.json
+|   postcss.config.js
+|   README.md
+|   tailwind.config.js
+|   tree.txt
+|   vite.config.js
+|   
++---node_modules
++---public 
+\---src
+    |   App.css
+    |   App.jsx
+    |   index.css
+    |   main.jsx
+    |   
+    +---api
+    |       axios.js
+    |       dashboard.api.js
+    |       device.api.js
+    |       
+    +---assets
+    |       hero.png
+    |       react.svg
+    |       vite.svg
+    |       
+    +---components
+    |   +---cards
+    |   |       DeviceControl.jsx
+    |   |       SensorCard.jsx
+    |   |       StatCard.jsx
+    |   |       
+    |   \---chart
+    |           RealtimeChart.jsx
+    |           
+    +---hooks
+    |       useSocket.js
+    |       
+    +---layout
+    |       Sidebar.jsx
+    |       
+    +---pages
+    |       chart.jsx
+    |       Dashboard.jsx
+    |       Devices.jsx
+    |       Logs.jsx
+    |       Profile.jsx
+    |       
+    \---socket
+            socket.js
+            
