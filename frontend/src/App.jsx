@@ -1,8 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Devices from "./pages/Devices";
+import { useState } from 'react'
+import Signup from './Pages/Sign up/Signup.jsx'
+import Login from './Pages/Login/Login.jsx'; // Tạm đóng lại nếu chưa có file Login.jsx
+import './App.css'
 
-export default function App() {
+function App() {
+  const [count, setCount] = useState(0)
+
+
   return (
     <BrowserRouter>
       <Routes>
@@ -13,14 +20,17 @@ export default function App() {
         <Route path="/devices" element={<Devices />} />
         <Route path="/logs" element={<div>Logs Page</div>} />
         <Route path="/profile" element={<div>Profile Page</div>} />
-
+        <Route path="/signup" element={<Signup />} /> {/* Định nghĩa các tuyến đường */}
+        <Route path="/login" element={<Login />} />
+        
+        {/* Mặc định khi vào web sẽ hiện trang Signup */}
+        <Route path="/" element={<Signup />} />
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );
+
 }
 
-<div className="bg-red-500 text-white p-10">
-  TEST TAILWIND
-</div>
+export default App

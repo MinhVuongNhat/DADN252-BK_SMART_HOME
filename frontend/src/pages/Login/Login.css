@@ -1,0 +1,193 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.login-container {
+  width: 100%; /* Chiều rộng bằng đúng 100% màn hình thiết bị */
+  height: 100vh; /* Chiều cao bằng đúng 100% màn hình thiết bị */
+  overflow: hidden; /* Tuyệt đối không cho hiện thanh cuộn ngang */
+}
+
+.login-body {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* CỘT TRÁI - Thắng nhìn xem ảnh nền đã lên chưa */
+.info-box-left {
+  flex: 0 0 30%; /* Luôn luôn giữ 40%, không được co lại */
+  height: 100%;
+  background-color: #002147;
+  background-image: linear-gradient(rgba(0,33,71,0.7), rgba(0,33,71,0.7)), 
+                    url('../../assets/logo\ brand\ bk.jpg');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.login-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.login-header h1 {
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* Thêm chút bóng cho chữ dễ đọc */
+}
+
+.slogan {
+  font-size: 2.2rem;
+  line-height: 1.2;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* --- CỘT PHẢI: FORM TRẮNG --- */
+/* CỘT PHẢI - Phải rộng rãi ra */
+.form-box-right {
+  flex: 0 0 70%; /* chiều rộng so với khung */
+  height: 100%;
+  background: white;
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative; /* <--- THÊM DÒNG NÀY */
+  overflow: hidden; /* Tránh hiện thanh cuộn không cần thiết */
+  /* border: 5px solid red; */
+}
+
+.form-footer {
+    position: absolute; 
+    bottom: 20px;       /* Cách đáy một khoảng vừa phải */
+    left: 0;            /* Bắt đầu từ mép trái thùng cha */
+    width: 100%;        /* Trải dài hết chiều rộng cột trắng */
+    padding: 0 60px;    /* Đẩy nội dung vào trong cho thẳng hàng với Form */
+    
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    font-size: 0.75rem;
+    color: #888;
+}
+.help {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.copyright p {
+    margin: 0;
+}
+
+.project-name {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.project-name h1 {
+  font-size: 1.4rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.project-name p {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Style cho các ô Input có Icon */
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+  align-items: center;
+}
+
+/* Từng ô input - Chỗ này Thắng đang bị lỗi thẳng hàng */
+.input {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  width: 70%;
+  border-radius: 4px;
+  /* border: 5px solid red; */
+}
+
+
+.input:focus-within {
+  border-color: #002147; /* Đổi thành màu xanh đậm của cột trái */
+  box-shadow: 0 0 5px rgba(213, 217, 223, 0.2); /* Thêm chút bóng mờ cho sang */
+}
+
+.input img {
+  width: 20px;
+  margin-right: 15px;
+}
+
+.input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #002147;
+  background-color: transparent !important;
+}
+
+
+
+/* Nút bấm có mũi tên */
+/* Nút bấm */
+.btn-login {
+  width: 70%;
+  background: #002147;
+  color: white;
+  padding: 15px;
+  border: none;
+  display: flex;
+  justify-content: space-between; /* Để chữ 1 bên, mũi tên 1 bên */
+  align-self: center;
+  cursor: pointer;
+  font-weight: bold;
+}
+.btn-login:hover {
+  background-color: #003366;
+}
+
+.arrowright {
+  width: 18px;
+}
+
+.redirect-signup {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.redirect-signup a {
+  color: #002147;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+/* Footer phía dưới */
+
+
+.info {
+  width: 16px;
+}
