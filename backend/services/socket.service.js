@@ -1,30 +1,17 @@
 let io;
 
-exports.init = (server) => {
-
-  const { Server } = require("socket.io");
-
-  io = new Server(server, {
-    cors: { origin: "*" }
-  });
-
+exports.init = (ioInstance) => {
+  io = ioInstance;
   io.on("connection", (socket) => {
-
     console.log("Dashboard connected:", socket.id);
-
-    socket.on("disconnect", () => {
-      console.log("Dashboard disconnected");
-    });
-
+    socket.on("disconnect", () => console.log("Dashboard disconnected"));
   });
-
 };
-
 // gửi dữ liệu sensor realtime
 exports.sendSensorUpdate = (data) => {
 
   if (io) {
-    io.emit("sensor_update", data);
+    io.emit("sensor-data", data);
   }
 
 };

@@ -38,3 +38,11 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
+
+
+
+/* 
+http://localhost:5000/api/dashboard/summary
+http://localhost:5000/api/dashboard/sensors/latest
+http://localhost:5000/api/dashboard/sensors/history?sensorType=temperature
+*/
