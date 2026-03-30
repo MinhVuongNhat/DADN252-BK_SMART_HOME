@@ -17,7 +17,7 @@ function App() {
 
         {/* Placeholder pages */}
         <Route path="/devices" element={<Devices />} />
-        <Route path="/logs" element={<div>Logs Page</div>} />
+        <Route path="/logs" element={<Logs />} />
         <Route path="/profile" element={<div>Profile Page</div>} />
         <Route path="/signup" element={<Signup />} /> {/* Định nghĩa các tuyến đường */}
         <Route path="/login" element={<Login />} />

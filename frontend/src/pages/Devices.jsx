@@ -4,7 +4,7 @@ import axios from "../api/axios";
 import DeviceModal from "../components/modal/DeviceModal";
 import DeviceCard from "../components/cards/DeviceCard";
 import SensorCard from "../components/cards/SensorCard";
-import { mockDevices, mockSensors, mockRules } from "../api/mock";
+import { mockDevices, mockSensors, mockRules, mockConditions, mockActions, } from "../api/mock";
 
 export default function Devices() {
   const [tab, setTab] = useState("device");
@@ -22,48 +22,65 @@ export default function Devices() {
   useEffect(() => {
     setDevices(mockDevices);
     setSensors(mockSensors);
-    setRules(mockRules);
-    }, []);
 
-  const fetchData = async () => {
-    const d = await axios.get("/devices");
-    const s = await axios.get("/sensors");
-    const r = await axios.get("/automation");
+    const mergedRules = mockRules.map((rule) => {
+      const conditions = mockConditions.filter(
+        (c) => c.rule_id === rule.rule_id
+      );
 
-    setDevices(d.data);
-    setSensors(s.data);
-    setRules(r.data);
-  };
+      const actions = mockActions.filter(
+        (a) => a.rule_id === rule.rule_id
+      );
+
+      return {
+        ...rule,
+        conditions,
+        actions,
+      };
+    });
+
+    setRules(mergedRules);
+  }, []);
+
+//  const fetchData = async () => {
+//    const d = await axios.get("/devices");
+//    const s = await axios.get("/sensors");
+//    const r = await axios.get("/automation");
+
+//    setDevices(d.data);
+//    setSensors(s.data);
+//    setRules(r.data);
+//  };
 
   // ===== HANDLERS =====
   const handleToggle = (id, type) => {
-  setDevices((prev) =>
-    prev.map((d) =>
-    d.id === id
-      ? {
-        ...d,
-        ...(type === "power"
-        ? {
-          power_status: d.power_status === "on" ? "off" : "on",
-        }
-        : {
-          control_mode:
-            d.control_mode === "automation"
-            ? "manual"
-            : "automation",
-          }),
-      }
-      : d
-    )
-  );
+    setDevices((prev) =>
+      prev.map((d) =>
+        d.device_id === id
+          ? {
+              ...d,
+              ...(type === "power"
+                ? {
+                    power_status: d.power_status === "on" ? "off" : "on",
+                  }
+                : {
+                    control_mode:
+                      d.control_mode === "automation"
+                        ? "manual"
+                        : "automation",
+                  }),
+            }
+          : d
+      )
+    );
   };
 
-    const handleDelete = (id) => {
-    setDevices((prev) => prev.filter((d) => d.id !== id));
-    };
+  const handleDelete = (id) => {
+    setDevices((prev) => prev.filter((d) => d.device_id !== id));
+  };
 
     const handleSensorDelete = (id) => {
-    setSensors((prev) => prev.filter((s) => s.id !== id));
+    setSensors((prev) => prev.filter((s) => s.device_id !== id));
     };
 
     const handleSetting = (device) => {
@@ -72,10 +89,10 @@ export default function Devices() {
     };
 
     const handleSave = (device) => {
-      if (device.id && devices.find((d) => d.id === device.id)) {
+      if (device.device_id && devices.find((d) => d.device_id === device.device_id)) {
         // UPDATE
         setDevices((prev) =>
-        prev.map((d) => (d.id === device.id ? device : d))
+        prev.map((d) => (d.device_id === device.device_id ? device : d))
         );
       } else {
         // CREATE
@@ -143,7 +160,7 @@ export default function Devices() {
             <Grid>
               {devices.map((d) => (
                 <DeviceCard
-                key={d.id}
+                key={d.device_id}
                 device={d}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
@@ -179,7 +196,11 @@ export default function Devices() {
 
         {/* ===== AUTOMATION ===== */}
         {tab === "automation" && (
-          <AutomationList rules={rules} />
+          <AutomationList
+            rules={rules}
+            sensors={sensors}
+            devices={devices}
+          />
         )}
       </div>
 
@@ -224,27 +245,63 @@ function Grid({ children }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{children}</div>;
 }
 
-function AutomationList({ rules }) {
+function AutomationList({ rules, sensors, devices }) {
   return (
     <div className="space-y-4">
       {rules.map((r) => (
-        <div key={r.id} className="bg-white p-4 rounded-lg shadow-sm">
+        <div key={r.rule_id} className="bg-white p-4 rounded-lg shadow-sm">
+          
+          {/* HEADER */}
           <div className="flex justify-between">
             <h3 className="font-semibold">{r.name}</h3>
 
             <span
               className={`px-2 py-1 text-sm rounded ${
-                r.is_active ? "bg-green-100 text-green-600" : "bg-gray-200"
+                r.is_active
+                  ? "bg-green-100 text-green-600"
+                  : "bg-gray-200"
               }`}
             >
               {r.is_active ? "Đang chạy" : "Tắt"}
             </span>
           </div>
 
-          <p className="mt-2 text-gray-600 text-sm">
-            Nếu sensor thỏa điều kiện → thực hiện hành động
-          </p>
+          {/* CONDITIONS */}
+          <div className="mt-3 text-sm text-gray-600">
+            <b>Nếu:</b>
+            {r.conditions.map((c, i) => {
+              const sensor = sensors.find(
+                (s) => s.sensor_id === c.sensor_id
+              );
 
+              return (
+                <div key={i}>
+                  {sensor?.name} {c.operator} {c.target_value} {sensor?.unit}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ACTIONS */}
+          <div className="mt-2 text-sm text-gray-600">
+            <b>Thì:</b>
+            {r.actions.map((a, i) => {
+              const device = devices.find(
+                (d) => d.device_id === a.device_id
+              );
+
+              return (
+                <div key={i}>
+                  {a.action_type === "turn_on"
+                    ? "Bật"
+                    : "Tắt"}{" "}
+                  {device?.name}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ACTION BUTTON */}
           <div className="flex gap-2 mt-3">
             <button className="bg-gray-200 px-3 py-1 rounded">
               Sửa
