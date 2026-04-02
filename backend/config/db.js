@@ -1,13 +1,13 @@
 const { Sequelize } = require("sequelize");
 
 const sequelize = new Sequelize(
-  "smarthome",      // đúng với database trong script SQL
-  "sManager",       // login SQL Server
-  "Nhom6251",       // password
+  process.env.DB_NAME, // was "smarthome"
+  process.env.DB_USER, // was "sManager"
+  process.env.DB_PASS, // was "Nhom6251"
   {
-    host: "ThuyHien",   // tên SQL Server instance
-    dialect: "mssql",
-    port: 1433,
+    host: process.env.DB_HOST, // was "ThuyHien" <--- THIS IS THE FIX
+    dialect: process.env.DB_DIALECT || "mssql",
+    port: process.env.DB_PORT || 1433,
 
     logging: false,
 

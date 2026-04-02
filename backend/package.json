@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "test": "jest --detectOpenHandles",
+    "test:unit": "jest --testPathPattern=mqtt.service.test.js",
+    "test:integration": "jest --testPathPattern=mqtt.integration.test.js --testTimeout=30000",
+    "test:mqtt": "node scripts/test-mqtt.js",
+    "test:all": "npm run test:unit && npm run test:integration"
   },
   "keywords": [],
   "author": "",
