@@ -6,23 +6,35 @@ import ChartPage from "./Chart";
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
-
-  const [summary, setSummary] = useState({});
-  const [sensor, setSensor] = useState({});
-  const [devices, setDevices] = useState({});
+  const [summary, setSummary] = useState({ totalDevices: 0, totalSensors: 0, alerts: 0 });
+  const [sensor, setSensor] = useState({ temperature: 0, humidity: 0, light: 0 });
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    const s1 = await axios.get("/dashboard/summary");
-    const s2 = await axios.get("/sensors/latest");
-    const s3 = await axios.get("/devices/quick");
+    try {
+      // Sử dụng allSettled để tránh việc 1 API chết làm hỏng cả trang
+      const results = await Promise.allSettled([
+        axios.get("/dashboard/summary"),
+        axios.get("/sensors/latest"),
+      ]);
 
-    setSummary(s1.data);
-    setSensor(s2.data);
-    setDevices(s3.data);
+      if (results[0].status === "fulfilled") {
+        setSummary(results[0].value.data);
+      }
+
+      if (results[1].status === "fulfilled") {
+        const sensorObj = {};
+        results[1].value.data.forEach((s) => {
+          sensorObj[s.type] = s.current_value;
+        });
+        setSensor(sensorObj);
+      }
+    } catch (err) {
+      console.error("Lỗi lấy dữ liệu:", err);
+    }
   };
 
   useEffect(() => {
@@ -32,62 +44,39 @@ export default function Dashboard() {
         [data.type]: data.value,
       }));
     });
+    return () => socket.off("sensor-data");
   }, []);
 
   return (
     <div className="flex">
       <Sidebar />
-
       <div className="flex-1 p-6 bg-gray-100">
-        {/* Title */}
-        <h1 className="text-2xl font-bold mb-4">Trang chủ</h1>
+        <h1 className="text-2xl font-bold mb-4">Hệ thống Giám sát</h1>
 
-        {/* Tabs */}
         <div className="flex gap-6 mb-6">
-          <Tab active={tab === "overview"} onClick={() => setTab("overview")}>
-            Tổng quan
-          </Tab>
-
-          <Tab active={tab === "chart"} onClick={() => setTab("chart")}>
-            Biểu đồ
-          </Tab>
+          <Tab active={tab === "overview"} onClick={() => setTab("overview")}>Tổng quan</Tab>
+          <Tab active={tab === "chart"} onClick={() => setTab("chart")}>Biểu đồ lịch sử</Tab>
         </div>
 
         {tab === "overview" && (
           <>
-            {/* ROW 1 */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <StatCard title="Thiết bị" value={summary.devices} />
-              <StatCard title="Cảm biến" value={summary.sensors} />
-              <StatCard title="Cảnh báo" value={summary.alerts} />
+              <StatCard title="Tổng thiết bị" value={summary.totalDevices} />
+              <StatCard title="Số cảm biến" value={summary.totalSensors} />
+              <StatCard title="Cảnh báo chưa xử lý" value={summary.alerts} />
             </div>
 
-            {/* ROW 2 */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <SensorCard title="Nhiệt độ" value={sensor.temperature} unit="°C" color="text-orange-500" />
+              <SensorCard title="Nhiệt độ" value={sensor.temperature} unit="°C" color="text-red-500" />
               <SensorCard title="Độ ẩm" value={sensor.humidity} unit="%" color="text-blue-500" />
               <SensorCard title="Ánh sáng" value={sensor.light} unit="lux" color="text-yellow-500" />
             </div>
 
-            {/* ROW 3 */}
-            <div className="grid grid-cols-3 gap-4">
-              <DeviceCard
-                title="Đèn"
-                status={devices.light}
-                onClick={() => toggle(devices, setDevices, "light")}
-              />
-
-              <DeviceCard
-                title="Quạt"
-                status={devices.fan}
-                onClick={() => toggle(devices, setDevices, "fan")}
-              />
-
-              <TimeCard />
+            <div className="grid grid-cols-1 gap-4">
+               <TimeCard />
             </div>
           </>
         )}
-
         {tab === "chart" && <ChartPage />}
       </div>
     </div>
