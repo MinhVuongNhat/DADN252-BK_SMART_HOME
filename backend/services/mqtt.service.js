@@ -140,46 +140,53 @@ class MQTTService {
       console.error("❌ Handle Message Error:", error);
     }
   }
-// Process sensor data
-static async handleSensorData(feedKey, value) {
-  try {
-    const numericValue = parseFloat(value);
+  // Process sensor data
+  static async handleSensorData(feedKey, value) {
+    try {
+      const numericValue = parseFloat(value);
 
-    // Lấy sensor tương ứng theo mqtt_topic
-    const sensor = await Sensor.findOne({ where: { mqtt_topic: feedKey } });
-    if (!sensor) {
-      console.warn(`⚠️ Sensor not found for feedKey: ${feedKey}`);
-      return;
-    }
+      // Lấy sensor tương ứng theo mqtt_topic
+      const sensor = await Sensor.findOne({ where: { mqtt_topic: feedKey } });
+      if (!sensor) {
+        console.warn(`⚠️ Sensor not found for feedKey: ${feedKey}`);
+        return;
+      }
 
-    await SensorData.create({
-      sensor_id: sensor.sensor_id,
-      value: numericValue,
-      recorded_at: new Date(),
-    });
+      await SensorData.create({
+        sensor_id: sensor.sensor_id,
+        value: numericValue,
+        recorded_at: new Date(),
+      });
 
-    await LatestSensorValue.upsert({
-      sensor_id: sensor.sensor_id,
-      current_value: numericValue,
-      recorded_at: new Date(),
-      updated_at: new Date(),
-    });
+      await LatestSensorValue.upsert({
+        sensor_id: sensor.sensor_id,
+        current_value: numericValue,
+        recorded_at: new Date(),
+        updated_at: new Date(),
+      });
 
-    if (socketService && socketService.io) {
-      socketService.io.emit("sensor-data", {
+      if (socketService && socketService.io) {
+        socketService.io.emit("sensor-data", {
+          sensor_id: sensor.sensor_id,
+          type: sensor.type,
+          value: numericValue,
+          unit: sensor.unit,
+          timestamp: new Date(),
+        });
+      }
+
+      console.log(
+        `✅ Sensor data saved - ${sensor.name} (${feedKey}) = ${numericValue}`,
+      );
+      console.log("Emit sensor-data:", {
         sensor_id: sensor.sensor_id,
         type: sensor.type,
         value: numericValue,
-        unit: sensor.unit,
-        timestamp: new Date(),
       });
+    } catch (error) {
+      console.error("❌ Handle Sensor Data Error:", error);
     }
-
-    console.log(`✅ Sensor data saved - ${sensor.name} (${feedKey}) = ${numericValue}`);
-  } catch (error) {
-    console.error("❌ Handle Sensor Data Error:", error);
   }
-}
 
   // Process device status
   static async handleDeviceStatus(feedKey, data) {
