@@ -2,7 +2,7 @@ const mqtt = require("mqtt");
 const mqttConfig = require("../config/mqtt");
 const Device = require("../models/Device");
 const Log = require("../models/Log");
-const { SensorData, LatestSensorValue } = require("../models/Sensor");
+const { Sensor, SensorData, LatestSensorValue } = require("../models/Sensor");
 
 // Import the whole module instead of destructuring to avoid circular dependencies
 const socketService = require("./socket.service");
@@ -14,7 +14,9 @@ class MQTTService {
   static async connect() {
     try {
       if (!mqttConfig.username || !mqttConfig.password) {
-        throw new Error("Missing Adafruit IO credentials in environment variables.");
+        throw new Error(
+          "Missing Adafruit IO credentials in environment variables.",
+        );
       }
 
       const options = {
@@ -115,15 +117,15 @@ class MQTTService {
   // Handle incoming MQTT messages
   static async handleMessage(topic, payload) {
     try {
-      const data = JSON.parse(payload.toString());
+      const data = payload.toString();
       console.log(`📨 Message received on ${topic}:`, data);
 
       const parts = topic.split("/");
       if (parts.length < 3) return;
 
-      const feedKey = parts[2]; 
+      const feedKey = parts[2];
 
-      if (feedKey.startsWith("sensor-")) {
+      if (["nhietdo", "doam", "anhsang"].includes(feedKey)) {
         await this.handleSensorData(feedKey, data);
       }
 
@@ -138,45 +140,46 @@ class MQTTService {
       console.error("❌ Handle Message Error:", error);
     }
   }
+// Process sensor data
+static async handleSensorData(feedKey, value) {
+  try {
+    const numericValue = parseFloat(value);
 
-  // Process sensor data
-  static async handleSensorData(feedKey, data) {
-    try {
-      const match = feedKey.match(/sensor-(\w+)-(\d+)/);
-      if (!match) return;
-
-      const sensorType = match[1]; 
-      const sensorId = match[2];
-
-      await SensorData.create({
-        sensor_id: sensorId,
-        value: data.value,
-        recorded_at: new Date(),
-      });
-
-      await LatestSensorValue.upsert({
-        sensor_id: sensorId,
-        current_value: data.value,
-        recorded_at: new Date(),
-        updated_at: new Date(),
-      });
-
-      // Dynamically grab 'io' to prevent undefined crashes
-      if (socketService && socketService.io) {
-        socketService.io.emit("sensor-data", {
-          sensor_id: sensorId,
-          type: sensorType,
-          value: data.value,
-          unit: data.unit || "",
-          timestamp: new Date(),
-        });
-      }
-
-      console.log(`✅ Sensor data saved - ${sensorType}:${sensorId} = ${data.value}`);
-    } catch (error) {
-      console.error("❌ Handle Sensor Data Error:", error);
+    // Lấy sensor tương ứng theo mqtt_topic
+    const sensor = await Sensor.findOne({ where: { mqtt_topic: feedKey } });
+    if (!sensor) {
+      console.warn(`⚠️ Sensor not found for feedKey: ${feedKey}`);
+      return;
     }
+
+    await SensorData.create({
+      sensor_id: sensor.sensor_id,
+      value: numericValue,
+      recorded_at: new Date(),
+    });
+
+    await LatestSensorValue.upsert({
+      sensor_id: sensor.sensor_id,
+      current_value: numericValue,
+      recorded_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    if (socketService && socketService.io) {
+      socketService.io.emit("sensor-data", {
+        sensor_id: sensor.sensor_id,
+        type: sensor.type,
+        value: numericValue,
+        unit: sensor.unit,
+        timestamp: new Date(),
+      });
+    }
+
+    console.log(`✅ Sensor data saved - ${sensor.name} (${feedKey}) = ${numericValue}`);
+  } catch (error) {
+    console.error("❌ Handle Sensor Data Error:", error);
   }
+}
 
   // Process device status
   static async handleDeviceStatus(feedKey, data) {
@@ -192,7 +195,7 @@ class MQTTService {
           connection_status: "online",
           last_seen: new Date(),
         },
-        { where: { id: deviceId } }
+        { where: { id: deviceId } },
       );
 
       if (socketService && socketService.io) {
@@ -203,7 +206,9 @@ class MQTTService {
         });
       }
 
-      console.log(`✅ Device status updated - Device ${deviceId}: ${data.power_status || data.status}`);
+      console.log(
+        `✅ Device status updated - Device ${deviceId}: ${data.power_status || data.status}`,
+      );
     } catch (error) {
       console.error("❌ Handle Device Status Error:", error);
     }
@@ -240,7 +245,7 @@ class MQTTService {
   }
 }
 
-MQTTService.connect().catch(err => {
+MQTTService.connect().catch((err) => {
   console.error("❌ Failed to auto-connect MQTT on startup:", err);
 });
 
