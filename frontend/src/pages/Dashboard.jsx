@@ -18,7 +18,7 @@ export default function Dashboard() {
       // Sử dụng allSettled để tránh việc 1 API chết làm hỏng cả trang
       const results = await Promise.allSettled([
         axios.get("/dashboard/summary"),
-        axios.get("/sensors/latest"),
+        axios.get("/dashboard/sensors/latest"),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -38,13 +38,19 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    socket.on("sensor-data", (data) => {
-      setSensor((prev) => ({
+    const handler = (data) => {
+      console.log("RECEIVED:", data);
+      setSensor(prev => ({
         ...prev,
         [data.type]: data.value,
       }));
-    });
-    return () => socket.off("sensor-data");
+    };
+
+    socket.on("sensor-data", handler);
+
+    return () => {
+      socket.off("sensor-data", handler);
+    };
   }, []);
 
   return (

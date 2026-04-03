@@ -165,15 +165,13 @@ static async handleSensorData(feedKey, value) {
       updated_at: new Date(),
     });
 
-    if (socketService && socketService.io) {
-      socketService.io.emit("sensor-data", {
-        sensor_id: sensor.sensor_id,
-        type: sensor.type,
-        value: numericValue,
-        unit: sensor.unit,
-        timestamp: new Date(),
-      });
-    }
+    socketService.sendSensorUpdate({
+      sensor_id: sensor.sensor_id,
+      type: sensor.type,
+      value: numericValue,
+      unit: sensor.unit,
+      timestamp: new Date(),
+    });
 
     console.log(`✅ Sensor data saved - ${sensor.name} (${feedKey}) = ${numericValue}`);
   } catch (error) {

@@ -195,33 +195,6 @@ CREATE TABLE alerts (
 );
 GO
 
--- TRIGGER TỰ ĐỘNG CẬP NHẬT LATEST VALUE
-CREATE OR ALTER TRIGGER TRG_Sync_Latest_Sensor_Value
-ON sensor_data
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    MERGE latest_sensor_values AS target
-    USING (
-        SELECT sensor_id, MAX(recorded_at) AS recorded_at, MAX(value) AS value
-        FROM inserted
-        GROUP BY sensor_id
-    ) AS source
-    ON target.sensor_id = source.sensor_id
-
-    WHEN MATCHED THEN
-        UPDATE SET 
-            current_value = source.value,
-            recorded_at = source.recorded_at,
-            updated_at = SYSDATETIMEOFFSET()
-
-    WHEN NOT MATCHED THEN
-        INSERT (sensor_id, current_value, recorded_at)
-        VALUES (source.sensor_id, source.value, source.recorded_at);
-END;
-GO
 -- TRIGGER TỰ ĐỘNG HÓA LOG
 CREATE TRIGGER TRG_Log_Device_Changes
 ON devices
@@ -392,4 +365,6 @@ SELECT * FROM alerts;
 PRINT '===== ACTIVITY LOGS ====='
 SELECT * FROM activity_logs;
 
-
+UPDATE sensors SET mqtt_topic='nhietdo' WHERE type='temperature';
+UPDATE sensors SET mqtt_topic='doam' WHERE type='humidity';
+UPDATE sensors SET mqtt_topic='anhsang' WHERE type='light';
