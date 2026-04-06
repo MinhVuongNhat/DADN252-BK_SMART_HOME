@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
+const userRoutes = require("./routes/user.routes");
 
 require("./services/mqtt.service");
 
@@ -28,6 +29,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/users", userRoutes);
 
 sequelize.authenticate()
   .then(() => console.log("✅ Database connected"))

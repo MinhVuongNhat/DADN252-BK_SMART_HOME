@@ -5,6 +5,7 @@ const User = require("./User");
 const { Sensor, SensorData, LatestSensorValue } = require("./Sensor");
 const Alert = require("./Alert");
 const Device = require("./Device");
+const Home = require("./Home");
 // User <-> Sensor
 User.hasMany(Sensor, { foreignKey: "user_id" });
 Sensor.belongsTo(User, { foreignKey: "user_id" });
@@ -25,9 +26,14 @@ Alert.belongsTo(Sensor, { foreignKey: "sensor_id" });
 User.hasMany(Device, { foreignKey: "user_id" });
 Device.belongsTo(User, { foreignKey: "user_id" });
 
+// Home <-> User
+Home.hasMany(User, { foreignKey: "home_id" });
+User.belongsTo(Home, { foreignKey: "home_id" });
+
 module.exports = { 
   sequelize, 
   User, 
+  Home,
   Sensor, 
   SensorData, 
   LatestSensorValue, 

@@ -18,7 +18,7 @@ export default function Dashboard() {
       // Sử dụng allSettled để tránh việc 1 API chết làm hỏng cả trang
       const results = await Promise.allSettled([
         axios.get("/dashboard/summary"),
-        axios.get("/sensors/latest"),
+        axios.get("/dashboard/sensors/latest"),
       ]);
 
       if (results[0].status === "fulfilled") {

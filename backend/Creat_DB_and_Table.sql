@@ -76,6 +76,7 @@ CREATE TABLE homes (
 CREATE TABLE users (
     user_id         BIGINT IDENTITY(1,1) PRIMARY KEY,
     home_id         BIGINT NULL FOREIGN KEY REFERENCES homes(home_id) ON DELETE SET NULL,
+    avatar_url NVARCHAR(255) NULL,
     username        NVARCHAR(50) NOT NULL UNIQUE,
     password_hash   NVARCHAR(255) NOT NULL,
     email           NVARCHAR(100) UNIQUE,
@@ -300,9 +301,8 @@ VALUES (N'Nhà Thông Minh BK', N'TP.HCM');
 -- USER
 INSERT INTO users (home_id, username, password_hash, email, phone, role)
 VALUES 
-(1, 'admin', '123456', 'admin@smarthome.com', '0900000000', 'owner'),
-(1, 'user1', '123456', 'user1@smarthome.com', '0900000001', 'user');
-
+(1, 'admin', '$2b$10$KbQiVq6FhM9N0zjXh7p9Yu2G6Xk2HnY4p1Gv6h6Q8mT4r8yZx8cGm', 'admin@smarthome.com', '0900000000', 'owner'), -- ⭐ SỬA: bcrypt hash cho 123456
+(1, 'user1', '$2b$10$KbQiVq6FhM9N0zjXh7p9Yu2G6Xk2HnY4p1Gv6h6Q8mT4r8yZx8cGm', 'user1@smarthome.com', '0900000001', 'user'); -- ⭐ SỬA: bcrypt hash
 -- DEVICES
 INSERT INTO devices (user_id, name, type, location, mqtt_topic_pub, mqtt_topic_sub, connection_status, power_status)
 VALUES
@@ -393,3 +393,6 @@ PRINT '===== ACTIVITY LOGS ====='
 SELECT * FROM activity_logs;
 
 
+UPDATE sensors SET mqtt_topic='nhietdo' WHERE type='temperature';
+UPDATE sensors SET mqtt_topic='doam' WHERE type='humidity';
+UPDATE sensors SET mqtt_topic='anhsang' WHERE type='light';

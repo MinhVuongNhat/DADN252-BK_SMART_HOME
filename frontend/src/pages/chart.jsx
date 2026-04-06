@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "../api/axios";
+import axios from "../api/axios"; // endpoint backend
+import { io } from "socket.io-client";
 import {
   LineChart,
   Line,
@@ -10,6 +11,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// URL socket.io của backend
+const SOCKET_URL = "http://localhost:3000"; // đổi theo backend của bạn
+
 export default function ChartPage() {
   const [tempData, setTempData] = useState([]);
   const [humData, setHumData] = useState([]);
@@ -17,14 +21,48 @@ export default function ChartPage() {
 
   useEffect(() => {
     fetchAll();
+
+    const socket = io(SOCKET_URL);
+
+    socket.on("connect", () => console.log("✅ Connected to socket.io"));
+
+    socket.on("sensor-data", (data) => {
+      const formatted = {
+        time: new Date(data.timestamp).toLocaleTimeString(),
+        value: data.value,
+      };
+
+      switch (data.type) {
+        case "temperature":
+          setTempData((prev) => updateChart(prev, formatted));
+          break;
+        case "humidity":
+          setHumData((prev) => updateChart(prev, formatted));
+          break;
+        case "light":
+          setLightData((prev) => updateChart(prev, formatted));
+          break;
+        default:
+          break;
+      }
+    });
+
+    return () => socket.disconnect();
   }, []);
 
+  // Lấy lịch sử 20 điểm gần nhất
   const fetchAll = async () => {
     try {
       const [t, h, l] = await Promise.all([
-        axios.get("/sensors/history", { params: { sensorType: "temperature" } }),
-        axios.get("/sensors/history", { params: { sensorType: "humidity" } }),
-        axios.get("/sensors/history", { params: { sensorType: "light" } }),
+        axios.get("dashboard/sensors/history", {
+          params: { sensorType: "temperature" },
+        }),
+        axios.get("dashboard/sensors/history", {
+          params: { sensorType: "humidity" },
+        }),
+        axios.get("dashboard/sensors/history", {
+          params: { sensorType: "light" },
+        }),
       ]);
 
       setTempData(formatData(t.data));
@@ -35,36 +73,32 @@ export default function ChartPage() {
     }
   };
 
-  // 🔥 convert API → chart format
-  const formatData = (data) => {
-    return data
-      .slice(0, 20) // lấy 20 điểm gần nhất
-      .reverse() // để thời gian tăng dần
+  // Format data từ API
+  const formatData = (data) =>
+    data
+      .slice(0, 20)
+      .reverse()
       .map((item) => ({
         time: new Date(item.recorded_at).toLocaleTimeString(),
         value: item.value,
       }));
+
+  // Update chart realtime, giữ tối đa 20 điểm
+  const updateChart = (prevData, newPoint) => {
+    const updated = [...prevData, newPoint];
+    if (updated.length > 20) updated.shift();
+    return updated;
   };
 
   return (
     <div className="space-y-6">
-      {/* ================= NHIỆT ĐỘ ================= */}
       <ChartCard
         title="Nhiệt độ"
         data={tempData}
         color="red"
         bg="bg-[#e9d5b5]"
       />
-
-      {/* ================= ĐỘ ẨM ================= */}
-      <ChartCard
-        title="Độ ẩm"
-        data={humData}
-        color="blue"
-        bg="bg-[#cfe2f3]"
-      />
-
-      {/* ================= ĐỘ SÁNG ================= */}
+      <ChartCard title="Độ ẩm" data={humData} color="blue" bg="bg-[#cfe2f3]" />
       <ChartCard
         title="Độ sáng"
         data={lightData}
@@ -76,12 +110,10 @@ export default function ChartPage() {
 }
 
 // ================= REUSABLE COMPONENT =================
-
 function ChartCard({ title, data, color, bg }) {
   return (
     <div className={`${bg} p-4 rounded-lg shadow`}>
       <h2 className="font-semibold mb-2">{title}</h2>
-
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={data}>
           <CartesianGrid stroke="#ccc" />
