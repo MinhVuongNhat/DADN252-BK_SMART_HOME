@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Devices from "./pages/Devices";
+import Logs from "./pages/Logs"
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <BrowserRouter>

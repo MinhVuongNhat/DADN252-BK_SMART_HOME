@@ -3,6 +3,8 @@ import fanImg from "../../assets/fan.png";
 
 export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
   const img = device.type === "light" ? lightImg : fanImg;
+  const isOn = device.power_status === "on";
+  const isAuto = device.control_mode === "automation";
 
   return (
     <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -15,13 +17,13 @@ export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
       <Toggle
         label="Bật/Tắt"
         status={device.power_status === "on"}
-        onClick={() => onToggle(device.id, "power")}
+        onClick={() => onToggle(device.device_id, "power")}
       />
 
       <Toggle
         label="Tự động"
         status={device.control_mode === "automation"}
-        onClick={() => onToggle(device.id, "auto")}
+        onClick={() => onToggle(device.device_id, "auto")}
       />
 
       <div className="flex gap-2 mt-3">
@@ -33,7 +35,7 @@ export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
         </button>
 
         <button
-          onClick={() => onDelete(device.id)}
+          onClick={() => onDelete(device.device_id)}
           className="flex-1 bg-red-500 text-white rounded py-1"
         >
           Xóa

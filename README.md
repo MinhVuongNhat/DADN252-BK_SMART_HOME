@@ -148,7 +148,7 @@ POST /api/devices/:id/toggle
   "type": "power" // hoặc "mode"
 }
 
-6. Quick devices (dashboard)
+6. Quick devices (dashboard đã bỏ)
 GET /api/devices/quick
 {
   "light": true,

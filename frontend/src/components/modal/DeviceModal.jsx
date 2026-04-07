@@ -151,7 +151,7 @@ export default function DeviceModal({ device, onClose, onSave }) {
             onClick={handleSubmit}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg"
           >
-            Xong
+            Thêm
           </button>
         </div>
       </div>
