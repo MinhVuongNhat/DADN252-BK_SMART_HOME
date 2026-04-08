@@ -1,61 +1,201 @@
-## Expanding the ESLint configuration
+## 🚀 BK SmartHome – Realtime IoT Monitoring Dashboard
+### 📌 Giới thiệu
+BK SmartHome là một hệ thống giám sát thiết bị IoT toàn diện, cho phép thu thập, lưu trữ và trực quan hóa dữ liệu từ các cảm biến (nhiệt độ, độ ẩm, ánh sáng) theo thời gian thực. Hệ thống được thiết kế linh hoạt, hỗ trợ cả điều khiển thủ công và tự động hóa thông qua lịch trình hoặc điều kiện cảm biến.
+Hệ thống sử dụng giao thức MQTT để nhận dữ liệu từ thiết bị, xử lý ở backend và truyền realtime tới frontend thông qua WebSocket (Socket.IO).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🎯 Mục tiêu dự án
+ - Thu thập dữ liệu cảm biến theo thời gian thực
+ - Lưu trữ dữ liệu lịch sử phục vụ phân tích
+ - Hiển thị dashboard realtime
 
-Cấu trúc thư mục:
-ª   App.css
-ª   App.jsx
-ª   cau_truc.txt
-ª   index.css
-ª   main.jsx
-ª   
-+---api
-ª       axios.js
-ª       dashboard.api.js
-ª       device.api.js
-ª       mock.js
-ª       
-+---assets
-ª       cam-bien-anh-sang.png
-ª       cam-bien-nhiet-do-do-am-dht20.png
-ª       fan.png
-ª       hero.png
-ª       led.png
-ª       react.svg
-ª       vite.svg
-ª       
-+---components
-ª   +---automation
-ª   ª       AutomationRule.jsx
-ª   ª       
-ª   +---cards
-ª   ª       DeviceCard.jsx
-ª   ª       DeviceControl.jsx
-ª   ª       SensorCard.jsx
-ª   ª       StatCard.jsx
-ª   ª       
-ª   +---chart
-ª   ª       RealtimeChart.jsx
-ª   ª       
-ª   +---modal
-ª           DeviceModal.jsx
-ª           
-+---hooks
-ª       useSocket.js
-ª       
-+---layout
-ª       Sidebar.jsx
-ª       
-+---pages
-ª       chart.jsx
-ª       Dashboard.jsx
-ª       Devices.jsx
-ª       Logs.jsx
-ª       Profile.jsx
-ª       
-+---socket
-        socket.js
+### 🧠 Kiến trúc hệ thống
+IoT Devices (Sensors)
+        ↓
+     MQTT Broker (Adafruit IO)
+        ↓
+     Backend (Node.js)
+        ↓
+     Database (SQL Server)
+        ↓
+     Socket.IO (Realtime)
+        ↓
+     Frontend (React Dashboard)
 
+### ⚙️ Công nghệ sử dụng
+🔹 Backend
+Node.js
+Express.js
+Socket.IO (Realtime communication)
+MQTT (kết nối IoT)
+Sequelize (ORM)
+SQL Server
+🔹 Frontend
+ReactJS
+Axios (API calls)
+Socket.IO Client
+Recharts (biểu đồ)
+Tailwind CSS
+🔹 IoT & Data
+MQTT Protocol
+Adafruit IO (MQTT Broker)
+Time-series data processing
+
+### 📊 Chức năng chính
+ - Nhận dữ liệu cảm biến qua MQTT
+ - Lưu dữ liệu vào database
+ - Cập nhật realtime qua WebSocket
+ - Hiển thị biểu đồ lịch sử & realtime
+ - Dashboard tổng quan hệ thống
+
+### 📂 Cấu trúc thư mục
+project-root/
+BE
+|   Creat_DB_and_Table.sql
+|   package-lock.json
+|   package.json
+|   server.js
+|   tree.txt
+|   
++---config
+|       db.js
+|       mqtt.js
+|       socket.js
+|       
++---controllers
+|       auth.controller.js
+|       automation.controller.js
+|       dashboard.controller.js
+|       device.controller.js
+|       log.controller.js
+|       schedule.controller.js
+|       sensor.controller.js
+|       
++---middlewares
+|       auth.middleware.js
+|       
++---models
+|       Alert.js
+|       Automation.js
+|       Device.js
+|       index.js
+|       Log.js
+|       Schedule.js
+|       Sensor.js
+|       SensorData.js
+|       User.js
+|       
++---node_modules
++---routes
+|       auth.routes.js
+|       automation.routes.js
+|       dashboard.routes.js
+|       device.routes.js
+|       log.routes.js
+|       schedule.routes.js
+|       sensor.routes.js
+|       
++---services
+|       automation.service.js
+|       mqtt.service.js
+|       schedule.service.js
+|       socket.service.js
+|       
++---utils
+|       jwt.js
+|       
+\---workers
+        automation.worker.js
+        schedule.worker.js
+FE
+|   .gitignore
+|   eslint.config.js
+|   index.html
+|   package-lock.json
+|   package.json
+|   postcss.config.js
+|   README.md
+|   tailwind.config.js
+|   tree.txt
+|   vite.config.js
+|
++---public
+|       favicon.svg
+|       icons.svg
+|       
+\---src
+    |   App.css
+    |   App.jsx
+    |   index.css
+    |   main.jsx
+    |   
+    +---api
+    |       axios.js
+    |       dashboard.api.js
+    |       device.api.js
+    |       log.api.js
+    |       mock.js
+    |       
+    +---assets
+    |       arrow-right Copy.svg
+    |       cam-bien-anh-sang.png
+    |       cam-bien-nhiet-do-do-am-dht20.png
+    |       fan.png
+    |       hero.png
+    |       home-icon.svg
+    |       icon-mail.svg
+    |       icon-user.svg
+    |       info.svg
+    |       led.png
+    |       lock.svg
+    |       lock1.svg
+    |       logo brand bk.jpg
+    |       logo.svg
+    |       phone.svg
+    |       react.svg
+    |       vite.svg
+    |       
+    +---components
+    |   +---automation
+    |   |       AutomationRule.jsx
+    |   |       
+    |   +---cards
+    |   |       DeviceCard.jsx
+    |   |       DeviceControl.jsx
+    |   |       SensorCard.jsx
+    |   |       StatCard.jsx
+    |   |       
+    |   +---chart
+    |   |       RealtimeChart.jsx
+    |   |       
+    |   \---modal
+    |           DeviceModal.jsx
+    |           
+    +---hooks
+    |       useSocket.js
+    |       
+    +---layout
+    |       Sidebar.jsx
+    |       
+    +---pages
+    |   |   chart.jsx
+    |   |   Dashboard.jsx
+    |   |   Devices.jsx
+    |   |   Logs.jsx
+    |   |   Profile.jsx
+    |   |   
+    |   +---Login
+    |   |       Login.css
+    |   |       Login.jsx
+    |   |       
+    |   \---Sign up
+    |           Signup.css
+    |           Signup.jsx
+    |           
+    \---socket
+            socket.js
+               
+
+### 🔌 APIs END POINT
 🧠 AUTH (LOGIN / REGISTER + JWT)
 POST /api/auth/login
 POST /api/auth/register
@@ -142,10 +282,14 @@ PUT /api/devices/:id
 4. Xóa thiết bị
 DELETE /api/devices/:id
 
-5. Toggle nhanh (switch)
-POST /api/devices/:id/toggle
-{
-  "type": "power" // hoặc "mode"
+5. Thay đổi switch, trạng thái, mode
+PATCH /api/devices/:id
+{ 
+  "power_status": "on" 
+} 
+hoặc
+{ 
+  "control_mode": "automation" 
 }
 
 6. Quick devices (dashboard đã bỏ)
@@ -174,13 +318,16 @@ GET /api/sensors
 2. Thêm sensor
 POST /api/sensors
 
-3. Xóa sensor
+3. Thay đổi status
+PATCH /api/sensors/:id
+
+4. Xóa sensor
 DELETE /api/sensors/:id
 
-4. Latest (bạn đã có)
+5. Latest data
 GET /api/sensors/latest
 
-5. History
+6. History
 GET /api/sensors/history?sensorId=1
 
 🤖 Automation Rule Engine
@@ -220,10 +367,13 @@ POST /api/automation
   }
 }
 
-3. Bật/tắt rule
+3. Sửa rule
+PUT /api/automation/:id
+
+4. Bật/tắt rule
 PATCH /api/automation/:id/toggle
 
-4. Xóa rule
+5. Xóa rule
 DELETE /api/automation/:id
 
 ⏰ Schedule APIs (Cho Modal)
@@ -325,3 +475,51 @@ mqtt.on("message", async (topic, payload) => {
 2. Control
 POST /devices/:id/control
 → publish MQTT
+
+### 🛠️ Cài đặt & chạy dự án
+1. Clone project
+git clone https://github.com/your-repo/bk-smarthome.git
+cd bk-smarthome
+
+2. Backend
+cd backend
+npm install
+
+Tạo file .env
+PORT=5000
+DB_HOST=localhost
+DB_USER=your_user
+DB_PASS=your_password
+DB_NAME=smarthome
+
+MQTT_USERNAME=your_adafruit_username
+MQTT_PASSWORD=your_adafruit_key
+MQTT_BROKER=io.adafruit.com
+MQTT_PORT=1883
+
+Chạy server
+npm start
+
+3. Frontend
+cd frontend
+npm install
+npm run dev
+
+### 🧪 Test hệ thống
+Test MQTT
+Gửi dữ liệu từ Adafruit IO feed:
+nhietdo
+doam
+anhsang
+Test Realtime
+Mở dashboard
+Quan sát:
+Sensor value thay đổi ngay lập tức
+Chart update realtime
+
+### 📈 Hướng phát triển
+Xây dựng Data Warehouse (Star Schema)
+Tích hợp Power BI / Tableau
+Thêm alert & notification system
+Triển khai Kafka / Redis cho scale lớn
+Multi-device management
