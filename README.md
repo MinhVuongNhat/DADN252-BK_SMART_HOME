@@ -56,9 +56,9 @@ Cấu trúc thư mục:
 +---socket
         socket.js
 
-🧠 AUTH (LOGIN / REGISTER + JWT)
+🧠 AUTH (LOGIN / SIGNUP + JWT)
 POST /api/auth/login
-POST /api/auth/register
+POST /api/auth/signup
 POST /api/auth/logout
 GET  /api/auth/me
 Response login:

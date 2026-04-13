@@ -1,7 +1,8 @@
 import React from "react";
 import './Signup.css'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from "react"; // Nhớ thêm useState ở đầu nhé
+import axios from "axios";
 
 import homeicon from '../../assets/home-icon.svg'
 import mailicon from '../../assets/icon-mail.svg'
@@ -14,35 +15,43 @@ import info from '../../assets/info.svg'
 import arrowright from '../../assets/arrow-right Copy.svg'
 const Signup = () => {
   // 1. Tạo các state để lưu thông tin
-  const [fullname, setFullname] = useState("");
+  const navigate = useNavigate();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [homeName, setHomeName] = useState("");
-  const handleSignup = (e) => {
-    e.preventDefault(); // Chặn trang web load lại khi bấm nút
+  const handleSignup = async (e) => {
+    e.preventDefault();
 
-    // LOGIC 1: Ép 2 mật khẩu phải giống nhau
     if (password !== confirmPassword) {
-        alert("Mật khẩu xác nhận không khớp!");
-        return; // Dừng lại luôn, không chạy code bên dưới
+        alert("Mật khẩu không khớp!");
+        return;
     }
 
-    // LOGIC 2: Lưu nháp vào LocalStorage (giả lập Database)
-    const newUser = {
-        fullname: fullname,
+    // Gom đúng đống data này gửi đi
+    const userData = {
+        username: username,
         email: email,
         password: password,
-        phone: phone,
-        homeName: homeName
+        phone: phone
+        // Tạm thời chưa gửi homeName vì Model chưa có cột này
     };
 
-    // Lưu vào trình duyệt dưới tên 'storedUser'
-    localStorage.setItem('storedUser', JSON.stringify(newUser));
-
-    alert("Đăng ký thành công! Dữ liệu đã được lưu vào 'bộ nhớ tạm' trình duyệt.");
-    // Sau này Thắng có thể dùng useNavigate để tự chuyển sang trang Login
+    try {
+        // Gửi sang API mà Thắng vừa mở cổng ở Backend
+        const response = await axios.post("http://localhost:5000/api/auth/signup", userData);
+        
+        if (response.status === 201) {
+            alert("Đăng ký thành công! Chào mừng thành viên mới.");
+            // Thắng có thể dùng useNavigate để chuyển sang trang /login
+            navigate('/login');
+        }
+    } catch (error) {
+        // Đây chính là lúc error.message phát huy tác dụng nè!
+        alert("Lỗi đăng ký: " + (error.response?.data?.message || "Server bận rồi"));
+    }
 };
   return (
     <div className="signup-container">
@@ -71,8 +80,8 @@ const Signup = () => {
                     type="text" 
                     placeholder="Họ và tên"
                     // Mỗi khi tao gõ, mày hãy cập nhật vào State cho tao
-                    value={fullname}
-                    onChange={(e) => setFullname(e.target.value)} />
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)} />
             </div>
             <div className="input">
               <img src={mailicon} alt="mail" className="mailicon" />

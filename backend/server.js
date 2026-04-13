@@ -9,6 +9,7 @@ const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
 const userRoutes = require("./routes/user.routes");
+const authRoutes = require('./routes/auth.routes');
 
 require("./services/mqtt.service");
 
@@ -23,6 +24,7 @@ socketService.init(io);
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 
 app.get("/", (req, res) => {
   res.send("BK SmartHome API running 🚀");

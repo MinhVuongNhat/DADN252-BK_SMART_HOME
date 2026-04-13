@@ -25,11 +25,11 @@ const User = sequelize.define("User", {
       isIn: [["active", "inactive", "suspended"]]
     }
   },
-  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-  updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
   tableName: "users",
-  timestamps: false
+  timestamps: true,
+  createdAt: 'created_at', // Map đúng tên cột trong SQL
+  updatedAt: 'updated_at'
 });
 
 module.exports = User;
