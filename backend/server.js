@@ -1,5 +1,5 @@
 require("dotenv").config();
-
+const path = require("path");
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -30,8 +30,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/dashboard", dashboardRoutes);
 
-app.use("/api/users", userRoutes);
-
+app.use("/api/user", userRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 sequelize.authenticate()
   .then(() => console.log("✅ Database connected"))
   .catch(err => console.error("❌ Database connection error:", err));

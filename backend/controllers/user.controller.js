@@ -133,39 +133,25 @@ exports.updateAvatar = async (req, res) => {
 
   }
 };
-
 exports.changePassword = async (req, res) => {
-
   try {
-
     const userId = req.user.user_id;
-
     const { old_password, new_password } = req.body;
 
     const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const match = await bcrypt.compare(old_password, user.password);
-
-    if (!match) {
-      return res.status(400).json({ message: "Old password incorrect" });
-    }
+    // FIX: So sánh với password_hash trong DB
+    const match = await bcrypt.compare(old_password, user.password_hash);
+    if (!match) return res.status(400).json({ message: "Mật khẩu cũ không chính xác" });
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
-
-    user.password = hashedPassword;
+    user.password_hash = hashedPassword; // Update đúng field
     user.updated_at = new Date();
-
     await user.save();
 
-    res.json({ message: "Password changed successfully" });
-
+    res.json({ message: "Đổi mật khẩu thành công" });
   } catch (err) {
-
     res.status(500).json({ error: err.message });
-
   }
 };

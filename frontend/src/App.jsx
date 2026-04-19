@@ -4,8 +4,10 @@ import Devices from "./pages/Devices";
 import Logs from "./pages/Logs";
 import { useState } from 'react'
 import Signup from './Pages/Sign up/Signup.jsx'
+import Profile from './pages/Profile.jsx';
 import Login from './Pages/Login/Login.jsx'; // Tạm đóng lại nếu chưa có file Login.jsx
 import './App.css'
+
 
 function App() {
   const [count, setCount] = useState(0)
@@ -18,7 +20,7 @@ function App() {
         {/* Placeholder pages */}
         <Route path="/devices" element={<Devices />} />
         <Route path="/logs" element={<Logs />} />
-        <Route path="/profile" element={<div>Profile Page</div>} />
+        <Route path="/profile" element={<Profile />}/>
         <Route path="/signup" element={<Signup />} /> {/* Định nghĩa các tuyến đường */}
         <Route path="/login" element={<Login />} />
         
