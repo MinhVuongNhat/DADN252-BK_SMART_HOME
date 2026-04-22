@@ -7,6 +7,10 @@ const Log = sequelize.define("Log", {
     primaryKey: true, 
     autoIncrement: true 
   },
+  user_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
   device_id: {
     type: DataTypes.BIGINT,
     allowNull: true
@@ -23,7 +27,7 @@ const Log = sequelize.define("Log", {
     defaultValue: DataTypes.NOW 
   }
 }, { 
-  tableName: "logs", 
+  tableName: "activity_logs",
   timestamps: false 
 });
 
