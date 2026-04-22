@@ -1,13 +1,14 @@
 const { Sequelize } = require("sequelize");
+require("dotenv").config();
 
 const sequelize = new Sequelize(
-  "smarthome",      // đúng với database trong script SQL
-  "sManager",       // login SQL Server
-  "Nhom6251",       // password
+  process.env.DB_NAME || "smarthome",
+  process.env.DB_USER || "sManager",
+  process.env.DB_PASSWORD || "Nhom6251",
   {
-    host: "ThuyHien",   // tên SQL Server instance
+    host: process.env.DB_HOST || "localhost",
     dialect: "mssql",
-    port: 1433,
+    port: Number(process.env.DB_PORT) || 1433,
 
     logging: false,
 

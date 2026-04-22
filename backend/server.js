@@ -9,6 +9,8 @@ const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
 const userRoutes = require("./routes/user.routes");
+const scheduleRoutes = require("./routes/schedule.routes");
+const scheduleWorker = require("./workers/schedule.worker");
 
 require("./services/mqtt.service");
 
@@ -31,6 +33,7 @@ app.get("/", (req, res) => {
 app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/user", userRoutes);
+app.use("/api", scheduleRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 sequelize.authenticate()
   .then(() => console.log("✅ Database connected"))
@@ -40,6 +43,7 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log("Server running on port " + PORT);
+  scheduleWorker.start();
 });
 
 

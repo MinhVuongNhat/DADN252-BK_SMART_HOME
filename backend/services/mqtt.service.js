@@ -88,22 +88,27 @@ class MQTTService {
 
       const payload = {
         command_id: `cmd-${Date.now()}`,
+        device_id: deviceId,
         command,
         timestamp: new Date().toISOString(),
         ...options,
       };
 
-      client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
-        if (err) {
-          console.error(`❌ Publish Error on ${topic}:`, err);
-          return false;
-        }
-        console.log(`✅ Published to ${topic}:`, payload);
+      await new Promise((resolve, reject) => {
+        client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+          if (err) {
+            console.error(`❌ Publish Error on ${topic}:`, err);
+            reject(err);
+            return;
+          }
+          console.log(`✅ Published to ${topic}:`, payload);
+          resolve();
+        });
       });
 
       await Log.create({
         device_id: deviceId,
-        action_type: "CONTROL",
+        action_type: options.source ? String(options.source).toUpperCase() : "CONTROL",
         description: `Command sent: ${command}`,
       });
 
