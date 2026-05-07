@@ -25,6 +25,7 @@ socketService.init(io);
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
+app.use('/api/sensors', require('./routes/sensor.routes'));
 
 app.get("/", (req, res) => {
   res.send("BK SmartHome API running 🚀");
