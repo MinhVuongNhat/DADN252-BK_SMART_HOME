@@ -251,11 +251,13 @@ io.emit("sensor-data", data);
 GET /api/devices
 Response json:
 {
+  "success": true,
   "data": [
     {
-      "id": 1,
+      "device_id": 1,
       "name": "Đèn phòng khách",
       "type": "light",
+      "location": "Phòng khách",
       "power_status": "on",
       "control_mode": "manual",
       "connection_status": "online"
@@ -266,22 +268,23 @@ Response json:
 2. Tạo thiết bị
 POST /api/devices
 {
-  "name": "Đèn mới",
-  "type": "light",
-  "location": "Phòng ngủ"
+  "name": "Đèn ngủ",
+  "power_status": "on",
+  "control_mode": "schedule"
 }
 
 3. Cập nhật thiết bị (modal Xong)
 PUT /api/devices/:id
 {
   "name": "Đèn 01",
-  "power_status": "on",
-  "control_mode": "schedule"
+  "type": "light",
+  "location": "bedroom"
 }
 
 4. Xóa thiết bị
 DELETE /api/devices/:id
 
+<<<<<<< Updated upstream
 5. Thay đổi switch, trạng thái, mode
 PATCH /api/devices/:id
 { 
@@ -294,9 +297,24 @@ hoặc
 
 6. Quick devices (dashboard đã bỏ)
 GET /api/devices/quick
+=======
+5. Toggle nhanh (switch)
+POST /api/devices/:id/toggle
 {
-  "light": true,
-  "fan": false
+  "type": "power"
+}
+
+6. Đổi chế độ chạy
+PATCH /api/devices/:id/mode
+>>>>>>> Stashed changes
+{
+  "control_mode": "schedule"
+}
+
+7. Manual control
+PATCH /api/devices/:id/power
+{
+  "power_status": "on"
 }
 
 🌡️ Sensor APIs
@@ -377,16 +395,18 @@ PATCH /api/automation/:id/toggle
 DELETE /api/automation/:id
 
 ⏰ Schedule APIs (Cho Modal)
-1. Lấy schedule
+1. Lấy schedule theo device
 GET /api/devices/:id/schedules
 
 2. Tạo schedule
 POST /api/schedules
 {
-  "device_id": 1,
-  "time_start": "18:30",
-  "time_end": "21:30",
-  "days": "1,2,3,4,5"
+  "device_id": "001"
+  "start_date": "2026-05-01",
+  "start_time": "18:30",
+  "end_date": "2026-05-10",
+  "end_time": "21:30",
+  "action_type": "turn_on"
 }
 
 3. Cập nhập schedule
@@ -394,6 +414,12 @@ PUT /api/schedules/:id
 
 4. Xóa schedule
 DELETE /api/schedules/:id
+
+5. Bật tắt chế độ schedule
+PATCH /api/schedules/:id/active
+{
+  "is_active": false
+}
 
 📜 Logs APIs
 1. Danh sách Lịch sử

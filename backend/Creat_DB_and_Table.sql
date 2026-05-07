@@ -167,9 +167,10 @@ CREATE TABLE schedules (
     device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id),
     name            NVARCHAR(100),
     action_type     NVARCHAR(50) NOT NULL,
-    target_value    DECIMAL(12,4),
-    time_start      TIME NOT NULL,
-    days_of_week    NVARCHAR(50), -- '1,2,3,4,5,6,7' (CN là 1)
+    start_time      TIME NOT NULL,
+    end_time        TIME NOT NULL,
+    start_date      DATE,
+    end_date        DATE,
     is_active       BIT DEFAULT 1,
     last_run_at     DATETIMEOFFSET,
     created_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
@@ -234,6 +235,9 @@ END
 GO 
 
 -- PROCEDURE KIỂM TRA VÀ THỰC THI LỊCH TRÌNH
+DROP PROCEDURE IF EXISTS SP_Process_Schedules
+GO
+
 CREATE PROCEDURE SP_Process_Schedules
 AS
 BEGIN
@@ -316,9 +320,9 @@ VALUES
 (1, 2, 'turn_on');
 
 -- SCHEDULE
-INSERT INTO schedules (device_id, name, action_type, time_start, days_of_week)
+INSERT INTO schedules (device_id, name, action_type, start_time, end_time, start_date, end_date, is_active)
 VALUES
-(1, N'Bật đèn buổi tối', 'turn_on', '18:00', '2,3,4,5,6,7');
+(1, N'Bật đèn buổi tối', 'turn_on', '18:00', '19:00', '2026-05-01', '2026-05-01', 1);
 
 -- ALERT
 INSERT INTO alerts (sensor_id, severity, message)

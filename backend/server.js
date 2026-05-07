@@ -8,6 +8,14 @@ const { Server } = require("socket.io");
 const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
+<<<<<<< Updated upstream
+=======
+const userRoutes = require("./routes/user.routes");
+const deviceRoutes = require("./routes/device.routes");
+
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./docs/swagger");
+>>>>>>> Stashed changes
 
 require("./services/mqtt.service");
 
@@ -20,6 +28,12 @@ const io = new Server(server, {
 
 socketService.init(io);
 
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec)
+);
+
 app.use(cors());
 app.use(express.json());
 
@@ -28,6 +42,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/devices", deviceRoutes);
 
 sequelize.authenticate()
   .then(() => console.log("✅ Database connected"))
