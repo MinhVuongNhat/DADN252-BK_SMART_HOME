@@ -168,9 +168,10 @@ CREATE TABLE schedules (
     device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id),
     name            NVARCHAR(100),
     action_type     NVARCHAR(50) NOT NULL,
-    target_value    DECIMAL(12,4),
-    time_start      TIME NOT NULL,
-    days_of_week    NVARCHAR(50), -- '1,2,3,4,5,6,7' (CN là 1)
+    start_time      TIME NOT NULL,
+    end_time        TIME NOT NULL,
+    start_date      DATE,
+    end_date        DATE,
     is_active       BIT DEFAULT 1,
     last_run_at     DATETIMEOFFSET,
     created_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
@@ -185,44 +186,8 @@ CREATE TABLE activity_logs (
     description     NVARCHAR(MAX),
     created_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
 );
--- ALERTS
-CREATE TABLE alerts (
-    alert_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
-    sensor_id       BIGINT NOT NULL FOREIGN KEY REFERENCES sensors(sensor_id),
-    severity        NVARCHAR(20) DEFAULT 'warning' CHECK (severity IN ('info', 'warning', 'critical')),
-    message         NVARCHAR(MAX) NOT NULL,
-    is_resolved     BIT DEFAULT 0,
-    created_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
-);
 GO
 
--- TRIGGER TỰ ĐỘNG CẬP NHẬT LATEST VALUE
-CREATE OR ALTER TRIGGER TRG_Sync_Latest_Sensor_Value
-ON sensor_data
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    MERGE latest_sensor_values AS target
-    USING (
-        SELECT sensor_id, MAX(recorded_at) AS recorded_at, MAX(value) AS value
-        FROM inserted
-        GROUP BY sensor_id
-    ) AS source
-    ON target.sensor_id = source.sensor_id
-
-    WHEN MATCHED THEN
-        UPDATE SET 
-            current_value = source.value,
-            recorded_at = source.recorded_at,
-            updated_at = SYSDATETIMEOFFSET()
-
-    WHEN NOT MATCHED THEN
-        INSERT (sensor_id, current_value, recorded_at)
-        VALUES (source.sensor_id, source.value, source.recorded_at);
-END;
-GO
 -- TRIGGER TỰ ĐỘNG HÓA LOG
 CREATE TRIGGER TRG_Log_Device_Changes
 ON devices
@@ -262,6 +227,9 @@ END
 GO 
 
 -- PROCEDURE KIỂM TRA VÀ THỰC THI LỊCH TRÌNH
+DROP PROCEDURE IF EXISTS SP_Process_Schedules
+GO
+
 CREATE PROCEDURE SP_Process_Schedules
 AS
 BEGIN
@@ -343,9 +311,9 @@ VALUES
 (1, 2, 'turn_on');
 
 -- SCHEDULE
-INSERT INTO schedules (device_id, name, action_type, time_start, days_of_week)
+INSERT INTO schedules (device_id, name, action_type, start_time, end_time, start_date, end_date, is_active)
 VALUES
-(1, N'Bật đèn buổi tối', 'turn_on', '18:00', '2,3,4,5,6,7');
+(1, N'Bật đèn buổi tối', 'turn_on', '18:00', '19:00', '2026-05-01', '2026-05-01', 1);
 
 -- ALERT
 INSERT INTO alerts (sensor_id, severity, message)
@@ -391,7 +359,6 @@ SELECT * FROM alerts;
 
 PRINT '===== ACTIVITY LOGS ====='
 SELECT * FROM activity_logs;
-
 
 UPDATE sensors SET mqtt_topic='nhietdo' WHERE type='temperature';
 UPDATE sensors SET mqtt_topic='doam' WHERE type='humidity';

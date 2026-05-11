@@ -1,6 +1,5 @@
-// models/User.js
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db");
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
 
 const User = sequelize.define(
   "User",
@@ -33,12 +32,7 @@ const User = sequelize.define(
     },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-  },
-  {
-    tableName: "users",
-    timestamps: false,
-  },
-}, {
+  }, {
   tableName: "users",
   timestamps: true,
   createdAt: 'created_at', // Map đúng tên cột trong SQL

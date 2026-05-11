@@ -8,6 +8,13 @@ const { Server } = require("socket.io");
 const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
+
+const userRoutes = require("./routes/user.routes");
+const deviceRoutes = require("./routes/device.routes");
+
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./docs/swagger");
+
 const userRoutes = require("./routes/user.routes");
 const authRoutes = require('./routes/auth.routes');
 
@@ -22,6 +29,12 @@ const io = new Server(server, {
 
 socketService.init(io);
 
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec)
+);
+
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
@@ -32,6 +45,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/devices", deviceRoutes);
 
 app.use("/api/user", userRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -44,11 +58,3 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
-
-
-
-/* 
-http://localhost:5000/api/dashboard/summary
-http://localhost:5000/api/dashboard/sensors/latest
-http://localhost:5000/api/dashboard/sensors/history?sensorType=temperature
-*/

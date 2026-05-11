@@ -38,13 +38,19 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    socket.on("sensor-data", (data) => {
-      setSensor((prev) => ({
+    const handler = (data) => {
+      console.log("RECEIVED:", data);
+      setSensor(prev => ({
         ...prev,
         [data.type]: data.value,
       }));
-    });
-    return () => socket.off("sensor-data");
+    };
+
+    socket.on("sensor-data", handler);
+
+    return () => {
+      socket.off("sensor-data", handler);
+    };
   }, []);
 
   return (

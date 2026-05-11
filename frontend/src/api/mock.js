@@ -93,7 +93,7 @@ export const mockRules = [
     priority: 1,
   },
   {
-    id: 2,
+    rule_id: 2,
     name: "Bật đèn khi tối",
     is_active: true,
     priority: 1,
