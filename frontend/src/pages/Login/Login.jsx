@@ -1,6 +1,7 @@
 import React, { useState } from 'react'; // Phải có { useState } ở đây
 import './Login.css'
 import { Link, useNavigate } from 'react-router-dom'; // Phải có useNavigate ở đây
+import axios from "axios";
 
 import mailicon from '../../assets/icon-mail.svg'
 import lockicon from '../../assets/lock.svg'
@@ -11,27 +12,31 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const handleLogin = (e) => {
-    e.preventDefault(); // Chặn load lại trang
+  const handleLogin = async (e) => { // Thêm async ở đây
+    e.preventDefault();
 
-    // 1. Lấy "sổ tay" tài khoản đã lưu từ LocalStorage ra
-    // Lưu ý: Tên 'storedUser' phải khớp với tên Thắng đặt bên trang Signup nhé!
-    const savedUser = JSON.parse(localStorage.getItem('storedUser'));
+    try {
+      // 1. Gửi email và password lên Backend để kiểm tra
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email: email,
+        password: password
+      });
 
-    // 2. Kiểm tra xem đã có ai đăng ký chưa
-    if (!savedUser) {
-        alert("Chưa có tài khoản nào được đăng ký cả!");
-        return;
+      // 2. Nếu Backend trả về 200 (OK)
+      if (response.status === 200) {
+        // Lưu lại cái "Vé thông hành" (accessToken) để dùng cho các trang sau
+        localStorage.setItem("accessToken", response.data.accessToken);
+        // Lưu thông tin user để hiển thị tên trên Dashboard
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+
+        alert("Đăng nhập thành công! Chào mừng quay trở lại.");
+        navigate('/dashboard'); 
+      }
+    } catch (error) {
+      // Hiện lỗi nếu sai pass hoặc email không tồn tại
+      alert("Lỗi đăng nhập: " + (error.response?.data?.message || "Sai tài khoản hoặc mật khẩu"));
     }
-
-    // 3. So sánh Email và Password người dùng vừa gõ với bản lưu
-    if (email === savedUser.email && password === savedUser.password) {
-        alert("Đăng nhập thành công! Chào mừng Thắng đến Dashboard.");
-        navigate('/dashboard'); // CHỈ CHUYỂN TRANG KHI ĐÚNG
-    } else {
-        alert("Email hoặc Mật khẩu không đúng, vui lòng kiểm tra lại!");
-    }
-};
+  };
   return (
     <div className="login-container">
       <div className="login-body">

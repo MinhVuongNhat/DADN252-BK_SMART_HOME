@@ -38,6 +38,11 @@ const User = sequelize.define(
     tableName: "users",
     timestamps: false,
   },
-);
+}, {
+  tableName: "users",
+  timestamps: true,
+  createdAt: 'created_at', // Map đúng tên cột trong SQL
+  updatedAt: 'updated_at'
+});
 
 module.exports = User;
