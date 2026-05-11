@@ -198,7 +198,7 @@ FE
 ### 🔌 APIs END POINT
 🧠 AUTH (LOGIN / REGISTER + JWT)
 POST /api/auth/login
-POST /api/auth/register
+POST /api/auth/signup
 POST /api/auth/logout
 GET  /api/auth/me
 Response login:

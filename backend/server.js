@@ -1,5 +1,5 @@
 require("dotenv").config();
-
+const path = require("path");
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -8,14 +8,15 @@ const { Server } = require("socket.io");
 const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
-<<<<<<< Updated upstream
-=======
+
 const userRoutes = require("./routes/user.routes");
 const deviceRoutes = require("./routes/device.routes");
 
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
->>>>>>> Stashed changes
+
+const userRoutes = require("./routes/user.routes");
+const authRoutes = require('./routes/auth.routes');
 
 require("./services/mqtt.service");
 
@@ -36,6 +37,8 @@ app.use(
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRoutes);
+app.use('/api/sensors', require('./routes/sensor.routes'));
 
 app.get("/", (req, res) => {
   res.send("BK SmartHome API running 🚀");
@@ -44,6 +47,8 @@ app.get("/", (req, res) => {
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/devices", deviceRoutes);
 
+app.use("/api/user", userRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 sequelize.authenticate()
   .then(() => console.log("✅ Database connected"))
   .catch(err => console.error("❌ Database connection error:", err));

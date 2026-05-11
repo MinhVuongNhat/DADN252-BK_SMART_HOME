@@ -11,6 +11,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// URL socket.io của backend
+const SOCKET_URL = "http://localhost:3000"; // đổi theo backend của bạn
+
 export default function ChartPage() {
   const [tempData, setTempData] = useState([]);
   const [humData, setHumData] = useState([]);
@@ -54,6 +57,7 @@ export default function ChartPage() {
     };
   }, []);
 
+  // Lấy lịch sử 20 điểm gần nhất
   const fetchAll = async () => {
     try {
       const [t, h, l] = await Promise.all([
@@ -78,6 +82,13 @@ export default function ChartPage() {
         time: new Date(item.recorded_at).toLocaleTimeString(),
         value: item.value,
       }));
+  }
+
+  // Update chart realtime, giữ tối đa 20 điểm
+  const updateChart = (prevData, newPoint) => {
+    const updated = [...prevData, newPoint];
+    if (updated.length > 20) updated.shift();
+    return updated;
   };
 
   return (
