@@ -284,7 +284,6 @@ PUT /api/devices/:id
 4. Xóa thiết bị
 DELETE /api/devices/:id
 
-<<<<<<< Updated upstream
 5. Thay đổi switch, trạng thái, mode
 PATCH /api/devices/:id
 { 
@@ -297,16 +296,6 @@ hoặc
 
 6. Quick devices (dashboard đã bỏ)
 GET /api/devices/quick
-=======
-5. Toggle nhanh (switch)
-POST /api/devices/:id/toggle
-{
-  "type": "power"
-}
-
-6. Đổi chế độ chạy
-PATCH /api/devices/:id/mode
->>>>>>> Stashed changes
 {
   "control_mode": "schedule"
 }
@@ -440,30 +429,11 @@ GET /api/logs?page=1&limit=10
   }
 }
 
-🔔 ALERTS
-1. Alert
-GET /api/alerts?page=1&limit=10
-{
-  "data": [
-    {
-      "alert_id": 1,
-      "severity": "critical",
-      "message": "Nhiệt độ quá cao",
-      "is_resolved": false,
-      "created_at": "2026-03-29T10:00:00Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "totalPages": 2
-  }
-}
+1. Danh sách Lịch sử
+GET	/api/logs
 
-2. Giải quyết Alert
-PATCH /api/alerts/:id/resolve
-
-3. Danh sách Alert
-GET /api/alerts
+2. Tạo log mới (thường dùng làm hàm helper bên trong server)
+POST	/api/logs
 
 👤 USER / PROFILE
 1. Lấy profile

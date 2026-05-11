@@ -1,8 +1,8 @@
-const sql = require("../config/db");
+const db = require("../config/db");
 
 exports.getDevices = async (req, res) => {
   try {
-    const result = await sql.query(`
+    const result = await db.query(`
       SELECT 
         device_id,
         name,
@@ -31,7 +31,7 @@ exports.getDeviceById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await sql.query`
+    const result = await db.query`
       SELECT 
         device_id,
         name,
@@ -69,7 +69,7 @@ exports.createDevice = async (req, res) => {
   try {
     const { name, type, location } = req.body;
 
-    await sql.query(`
+    await db.query(`
       INSERT INTO devices
       (
         user_id,
@@ -113,7 +113,7 @@ exports.updateDevice = async (req, res) => {
       control_mode
     } = req.body;
 
-    await sql.query(`
+    await db.query(`
       UPDATE devices
       SET
         name = N'${name}',
@@ -138,7 +138,7 @@ exports.deleteDevice = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await sql.query(`
+    await db.query(`
       DELETE FROM devices
       WHERE device_id = ${id}
     `);
@@ -161,7 +161,7 @@ exports.toggleDevice = async (req, res) => {
     const { type, mode } = req.body;
 
     if (type === "power") {
-      await sql.query(`
+      await db.query(`
         UPDATE devices
         SET power_status =
           CASE
@@ -173,7 +173,7 @@ exports.toggleDevice = async (req, res) => {
     }
 
     if (type === "mode") {
-      await sql.query(`
+      await db.query(`
         UPDATE devices
         SET control_mode = '${mode}'
         WHERE device_id = ${id}
@@ -197,7 +197,7 @@ exports.updateDeviceMode = async (req, res) => {
     const { id } = req.params;
     const { control_mode } = req.body;
 
-    await sql.query(`
+    await db.query(`
       UPDATE devices
       SET control_mode = '${control_mode}'
       WHERE device_id = ${id}
@@ -221,7 +221,7 @@ exports.updateDevicePower = async (req, res) => {
     const { id } = req.params;
     const { power_status } = req.body;
 
-    await sql.query(`
+    await db.query(`
       UPDATE devices
       SET power_status = '${power_status}'
       WHERE device_id = ${id}

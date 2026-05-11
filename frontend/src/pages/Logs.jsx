@@ -64,10 +64,6 @@ export default function Logs() {
         {/* Tabs + Search */}
         <div className="flex justify-between mb-4">
           <div className="flex gap-6">
-            <Tab active={tab === "alerts"} onClick={() => setTab("alerts")}>
-              Cảnh báo
-            </Tab>
-
             <Tab active={tab === "logs"} onClick={() => setTab("logs")}>
               Lịch sử
             </Tab>
@@ -151,71 +147,6 @@ function LogsTable({ data }) {
             <td className="p-3">{log.device_name || "System"}</td>
 
             <td className="p-3 text-gray-400 cursor-pointer">...</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-// ===== TABLE ALERTS =====
-function AlertsTable({ data, onResolve }) {
-  return (
-    <table className="w-full text-left">
-      <thead className="bg-gray-50 border-b">
-        <tr>
-          <th className="p-3"></th>
-          <th className="p-3">Cảnh báo</th>
-          <th className="p-3">Thời gian</th>
-          <th className="p-3">Mức độ</th>
-          <th className="p-3">Trạng thái</th>
-          <th></th>
-        </tr>
-      </thead>
-
-      <tbody>
-        {data.map((a) => (
-          <tr key={a.alert_id} className="border-b hover:bg-gray-50">
-            <td className="p-3">
-              <input type="checkbox" />
-            </td>
-
-            <td className="p-3">{a.message}</td>
-
-            <td className="p-3">{formatTime(a.created_at)}</td>
-
-            <td className="p-3">
-              <span
-                className={`px-2 py-1 text-white text-xs rounded ${
-                  a.severity === "critical"
-                    ? "bg-red-500"
-                    : a.severity === "warning"
-                    ? "bg-yellow-500"
-                    : "bg-blue-500"
-                }`}
-              >
-                {a.severity}
-              </span>
-            </td>
-
-            <td className="p-3">
-              {a.is_resolved ? (
-                <span className="text-green-600">Done</span>
-              ) : (
-                <span className="text-red-600">Pending</span>
-              )}
-            </td>
-
-            <td className="p-3">
-              {!a.is_resolved && (
-                <button
-                  onClick={() => onResolve(a.alert_id)}
-                  className="text-blue-500"
-                >
-                  Resolve
-                </button>
-              )}
-            </td>
           </tr>
         ))}
       </tbody>

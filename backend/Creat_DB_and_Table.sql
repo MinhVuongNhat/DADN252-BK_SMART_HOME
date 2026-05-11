@@ -185,15 +185,6 @@ CREATE TABLE activity_logs (
     description     NVARCHAR(MAX),
     created_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
 );
--- ALERTS
-CREATE TABLE alerts (
-    alert_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
-    sensor_id       BIGINT NOT NULL FOREIGN KEY REFERENCES sensors(sensor_id),
-    severity        NVARCHAR(20) DEFAULT 'warning' CHECK (severity IN ('info', 'warning', 'critical')),
-    message         NVARCHAR(MAX) NOT NULL,
-    is_resolved     BIT DEFAULT 0,
-    created_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
-);
 GO
 
 -- TRIGGER TỰ ĐỘNG HÓA LOG
