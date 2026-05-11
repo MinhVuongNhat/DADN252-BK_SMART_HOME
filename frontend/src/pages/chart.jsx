@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import RealtimeChart from "../components/chart/RealtimeChart";
 
 // URL socket.io của backend
 const SOCKET_URL = "http://localhost:3000"; // đổi theo backend của bạn
@@ -93,9 +94,9 @@ export default function ChartPage() {
 
   return (
     <div className="space-y-6">
-      <ChartCard title="Nhiệt độ" data={tempData} color="red" bg="bg-[#e9d5b5]" />
-      <ChartCard title="Độ ẩm" data={humData} color="blue" bg="bg-[#cfe2f3]" />
-      <ChartCard title="Độ sáng" data={lightData} color="orange" bg="bg-[#f3f1d3]" />
+      <RealtimeChart title="Nhiệt độ" data={tempData} color="red" bg="bg-[#e9d5b5]" />
+      <RealtimeChart title="Độ ẩm" data={humData} color="blue" bg="bg-[#cfe2f3]" />
+      <RealtimeChart title="Độ sáng" data={lightData} color="orange" bg="bg-[#f3f1d3]" />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import ChartPage from "./Chart";
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
-  const [summary, setSummary] = useState({ totalDevices: 0, totalSensors: 0, alerts: 0 });
+  const [summary, setSummary] = useState({ totalDevices: 0, totalSensors: 0});
   const [sensor, setSensor] = useState({ temperature: 0, humidity: 0, light: 0 });
 
   useEffect(() => {
@@ -69,7 +69,6 @@ export default function Dashboard() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <StatCard title="Tổng thiết bị" value={summary.totalDevices} />
               <StatCard title="Số cảm biến" value={summary.totalSensors} />
-              <StatCard title="Cảnh báo chưa xử lý" value={summary.alerts} />
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6">

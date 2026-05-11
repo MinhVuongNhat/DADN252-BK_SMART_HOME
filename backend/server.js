@@ -9,7 +9,6 @@ const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const socketService = require("./services/socket.service");
 
-const userRoutes = require("./routes/user.routes");
 const deviceRoutes = require("./routes/device.routes");
 
 const swaggerUi = require("swagger-ui-express");

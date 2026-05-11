@@ -1,6 +1,27 @@
 // backend/controllers/dashboard.controller.js
-const db = require("../config/db"); // db ở đây là instance của Sequelize
+const db = require("../config/db");
 const { QueryTypes } = require("sequelize");
+const { Device, Sensor } = require("../models");
+
+// Lấy tổng số thiết bị, cảm biến
+exports.getSummary = async (req, res) => {
+  try {
+    const totalDevices = await Device.count();
+    const totalSensors = await Sensor.count();
+
+    const inactiveSensors = await Sensor.count({
+      where: { status: "inactive" },
+    });
+
+    res.json({
+      totalDevices,
+      totalSensors,
+    });
+  } catch (err) {
+    console.error("Summary error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // Lấy dữ liệu sensor mới nhất cho card dashboard
 exports.getLatestSensors = async (req, res) => {
