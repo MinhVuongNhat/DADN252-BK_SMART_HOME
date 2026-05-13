@@ -2,86 +2,86 @@ import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import socket from "../socket/socket";
 import axios from "../api/axios";
-import ChartPage from "./Chart";
+import ChartPage from "./chart"; 
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
-  const [summary, setSummary] = useState({ totalDevices: 0, totalSensors: 0});
-  const [sensor, setSensor] = useState({ temperature: 0, humidity: 0, light: 0 });
+  const [summary, setSummary] = useState({ totalDevices: 0, totalSensors: 0 });
+  const [sensor, setSensor] = useState({ nhietdo: 0, doam: 0, anhsang: 0 });
 
   useEffect(() => {
+    // Đưa fetchData vào trong useEffect
+    const fetchData = async () => {
+      try {
+        const results = await Promise.allSettled([
+          axios.get("/dashboard/summary"),
+          axios.get("/dashboard/sensors/latest"),
+        ]);
+
+        if (results[0].status === "fulfilled") {
+          setSummary(results[0].value.data);
+        }
+
+        if (results[1].status === "fulfilled") {
+          const sensorObj = { nhietdo: 0, doam: 0, anhsang: 0 };
+          results[1].value.data.forEach((s) => {
+            // Dùng String(s.id) để đảm bảo so sánh chuỗi với chuỗi
+            if (String(s.id) === "1") sensorObj.nhietdo = s.current_value;
+            if (String(s.id) === "2") sensorObj.doam = s.current_value;
+            if (String(s.id) === "3") sensorObj.anhsang = s.current_value;
+          });
+          setSensor(sensorObj);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy dữ liệu:", err);
+      }
+    };
+
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      // Sử dụng allSettled để tránh việc 1 API chết làm hỏng cả trang
-      const results = await Promise.allSettled([
-        axios.get("/dashboard/summary"),
-        axios.get("/dashboard/sensors/latest"),
-      ]);
-
-      if (results[0].status === "fulfilled") {
-        setSummary(results[0].value.data);
-      }
-
-      if (results[1].status === "fulfilled") {
-        const sensorObj = {};
-        results[1].value.data.forEach((s) => {
-          sensorObj[s.type] = s.current_value;
-        });
-        setSensor(sensorObj);
-      }
-    } catch (err) {
-      console.error("Lỗi lấy dữ liệu:", err);
-    }
-  };
-
   useEffect(() => {
     const handler = (data) => {
-      console.log("RECEIVED:", data);
-      setSensor(prev => ({
+      setSensor((prev) => ({
         ...prev,
-        [data.type]: data.value,
+        [data.feed]: data.value, 
       }));
     };
 
-    socket.on("sensor-data", handler);
+    socket.on("sensor_update", handler); 
 
     return () => {
-      socket.off("sensor-data", handler);
+      socket.off("sensor_update", handler);
     };
   }, []);
 
   return (
-    <div className="flex">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex-1 p-6 bg-gray-100">
-        <h1 className="text-2xl font-bold mb-4">Hệ thống Giám sát</h1>
+      <div className="flex-1 p-8 bg-gray-50 overflow-y-auto">
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">Hệ thống Giám sát</h1>
 
-        <div className="flex gap-6 mb-6">
+        <div className="flex gap-8 mb-8 border-b">
           <Tab active={tab === "overview"} onClick={() => setTab("overview")}>Tổng quan</Tab>
           <Tab active={tab === "chart"} onClick={() => setTab("chart")}>Biểu đồ lịch sử</Tab>
         </div>
 
         {tab === "overview" && (
           <>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               <StatCard title="Tổng thiết bị" value={summary.totalDevices} />
               <StatCard title="Số cảm biến" value={summary.totalSensors} />
+              <TimeCard />
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <SensorCard title="Nhiệt độ" value={sensor.temperature} unit="°C" color="text-red-500" />
-              <SensorCard title="Độ ẩm" value={sensor.humidity} unit="%" color="text-blue-500" />
-              <SensorCard title="Ánh sáng" value={sensor.light} unit="lux" color="text-yellow-500" />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-               <TimeCard />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <SensorCard title="Nhiệt độ" value={sensor.nhietdo} unit="°C" color="text-red-500" />
+              <SensorCard title="Độ ẩm" value={sensor.doam} unit="%" color="text-blue-500" />
+              <SensorCard title="Ánh sáng" value={sensor.anhsang} unit="lux" color="text-yellow-500" />
             </div>
           </>
         )}
+        
         {tab === "chart" && <ChartPage />}
       </div>
     </div>
@@ -123,28 +123,12 @@ function SensorCard({ title, value, unit, color }) {
   );
 }
 
-function DeviceCard({ title, status, onClick }) {
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
-      <p className="mb-4">{title}</p>
-
-      <div
-        onClick={onClick}
-        className={`w-16 h-8 mx-auto rounded-full flex items-center px-1 cursor-pointer ${
-          status ? "bg-green-500 justify-end" : "bg-red-500 justify-start"
-        }`}
-      >
-        <div className="w-6 h-6 bg-white rounded-full"></div>
-      </div>
-    </div>
-  );
-}
-
 function TimeCard() {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
-    setInterval(() => setTime(new Date()), 1000);
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer); // Nhớ clear interval để tránh memory leak
   }, []);
 
   return (
@@ -158,10 +142,3 @@ function TimeCard() {
   );
 }
 
-// toggle helper
-function toggle(devices, setDevices, type) {
-  setDevices((prev) => ({
-    ...prev,
-    [type]: !prev[type],
-  }));
-}

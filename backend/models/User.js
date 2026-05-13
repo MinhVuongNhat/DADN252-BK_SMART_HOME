@@ -11,7 +11,11 @@ const User = sequelize.define(
       allowNull: true,
     },
     username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-    password_hash: { type: DataTypes.STRING(255), allowNull: false },
+    password_hash: { 
+      type: DataTypes.STRING(255), 
+      allowNull: false,
+      field: 'password_hash' // ÉP buộc map chính xác tên cột trong DB
+    },
     email: { type: DataTypes.STRING(100), unique: true },
     phone: { type: DataTypes.STRING(20) },
     role: {

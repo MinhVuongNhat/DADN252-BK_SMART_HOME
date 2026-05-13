@@ -1,13 +1,9 @@
-﻿-- ======================================================================
--- 0. TẠO DATABASE
--- ======================================================================
-USE master;
+﻿USE master;
 GO
 
--- Kiểm tra nếu database tồn tại thì xóa đi để tạo mới (tránh lỗi conflict dữ liệu cũ)
+-- Kiểm tra nếu database tồn tại thì xóa đi để tạo mới
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'smarthome')
 BEGIN
-    -- Đưa về chế độ Single User để kick hết kết nối cũ ra trước khi drop
     ALTER DATABASE smarthome SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE smarthome;
 END
@@ -17,9 +13,6 @@ GO
 CREATE DATABASE smarthome;
 GO
 
--- ======================================================================
--- 1. DROP LOGIN VÀ USER NẾU TỒN TẠI
--- ======================================================================
 USE smarthome;
 GO
 
@@ -27,7 +20,6 @@ GO
 IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'sManager')
 BEGIN
     DROP USER [sManager];
-    PRINT N'Database user sManager đã bị xóa.';
 END
 GO
 
@@ -38,31 +30,23 @@ GO
 IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'sManager')
 BEGIN
     DROP LOGIN [sManager];
-    PRINT N'Login sManager đã bị xóa.';
 END
 GO
 
--- ======================================================================
--- 2. TẠO LẠI LOGIN VÀ DATABASE USER
--- ======================================================================
 -- Tạo login mới
 CREATE LOGIN [sManager] WITH PASSWORD = N'Nhom6251';
-PRINT N'Login sManager đã được tạo.';
 GO
 
--- Tạo database user
 USE smarthome;
 GO
 
 CREATE USER [sManager] FOR LOGIN [sManager];
-PRINT N'Database user sManager đã được tạo.';
-GO
-
--- Gán quyền db_owner
 ALTER ROLE db_owner ADD MEMBER [sManager];
-PRINT N'Đã gán quyền db_owner cho sManager.';
 GO
 
+-- ======================================================================
+-- TẠO BẢNG
+-- ======================================================================
 
 -- NHÀ
 CREATE TABLE homes (
@@ -76,7 +60,7 @@ CREATE TABLE homes (
 CREATE TABLE users (
     user_id         BIGINT IDENTITY(1,1) PRIMARY KEY,
     home_id         BIGINT NULL FOREIGN KEY REFERENCES homes(home_id) ON DELETE SET NULL,
-    avatar_url NVARCHAR(255) NULL,
+    avatar_url      NVARCHAR(255) NULL,
     username        NVARCHAR(50) NOT NULL UNIQUE,
     password_hash   NVARCHAR(255) NOT NULL,
     email           NVARCHAR(100) UNIQUE,
@@ -122,11 +106,11 @@ CREATE TABLE sensor_data (
     sensor_id       BIGINT NOT NULL FOREIGN KEY REFERENCES sensors(sensor_id),
     value           DECIMAL(12,1) NOT NULL,
     recorded_at     DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
-    is_processed    BIT DEFAULT 0 -- Dùng cho Automation Worker check
+    is_processed    BIT DEFAULT 0 
 );
 CREATE INDEX IX_sensor_data_time ON sensor_data(sensor_id, recorded_at DESC);
 
--- BẢNG GIÁ TRỊ MỚI NHẤT (Cho Real-time Dashboard)
+-- BẢNG GIÁ TRỊ MỚI NHẤT
 CREATE TABLE latest_sensor_values (
     sensor_id       BIGINT PRIMARY KEY FOREIGN KEY REFERENCES sensors(sensor_id),
     current_value   DECIMAL(12,1),
@@ -134,7 +118,7 @@ CREATE TABLE latest_sensor_values (
     updated_at      DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
 );
 
--- AUTOMATION RULES (Dạng: Nếu ... Thì ...)
+-- AUTOMATION RULES
 CREATE TABLE automation_rules (
     rule_id         BIGINT IDENTITY(1,1) PRIMARY KEY,
     user_id         BIGINT NOT NULL FOREIGN KEY REFERENCES users(user_id),
@@ -157,7 +141,7 @@ CREATE TABLE automation_actions (
     action_id       BIGINT IDENTITY(1,1) PRIMARY KEY,
     rule_id         BIGINT NOT NULL FOREIGN KEY REFERENCES automation_rules(rule_id) ON DELETE CASCADE,
     device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id),
-    action_type     NVARCHAR(50) NOT NULL, -- turn_on, turn_off, set_level
+    action_type     NVARCHAR(50) NOT NULL, 
     target_value    DECIMAL(12,4),
     delay_seconds   INT DEFAULT 0
 );
@@ -168,6 +152,7 @@ CREATE TABLE schedules (
     device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id),
     name            NVARCHAR(100),
     action_type     NVARCHAR(50) NOT NULL,
+    target_value    DECIMAL(12,4), -- Đã thêm cột này để SP không báo lỗi
     start_time      TIME NOT NULL,
     end_time        TIME NOT NULL,
     start_date      DATE,
@@ -188,9 +173,74 @@ CREATE TABLE activity_logs (
 );
 GO
 
-DROP PROCEDURE IF EXISTS SP_Get_Sensor_Data_For_Export
+-- ======================================================================
+-- TRIGGERS VÀ PROCEDURES
+-- ======================================================================
+
+-- ======================================================================
+-- TRIGGERS VÀ PROCEDURES (BẢN FIX LỖI SYNTAX "OR")
+-- ======================================================================
+USE smarthome;
 GO
--- FUNCTION ĐỊNH DẠNG DỮ LIỆU TỪ FILE CSV
+
+IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_UpdateLatestValue')
+    DROP TRIGGER trg_UpdateLatestValue;
+GO
+
+CREATE TRIGGER trg_UpdateLatestValue
+ON sensor_data
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Tạo một bảng tạm chứa giá trị mới nhất của mỗi sensor trong đợt INSERT này
+    ;WITH LatestInserted AS (
+        SELECT sensor_id, value, recorded_at,
+               ROW_NUMBER() OVER (PARTITION BY sensor_id ORDER BY recorded_at DESC, id DESC) as rn
+        FROM inserted
+    )
+    MERGE INTO latest_sensor_values AS target
+    USING (SELECT sensor_id, value, recorded_at FROM LatestInserted WHERE rn = 1) AS source
+    ON (target.sensor_id = source.sensor_id)
+    WHEN MATCHED THEN
+        UPDATE SET 
+            target.current_value = source.value,
+            target.recorded_at = source.recorded_at,
+            target.updated_at = SYSDATETIMEOFFSET()
+    WHEN NOT MATCHED THEN
+        INSERT (sensor_id, current_value, recorded_at, updated_at)
+        VALUES (source.sensor_id, source.value, source.recorded_at, SYSDATETIMEOFFSET());
+END;
+GO
+-- 2. FIX TRIGGER Log_Device_Changes
+IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'TRG_Log_Device_Changes')
+    DROP TRIGGER TRG_Log_Device_Changes;
+GO
+
+CREATE TRIGGER TRG_Log_Device_Changes
+ON devices
+AFTER UPDATE
+AS
+BEGIN
+    IF UPDATE(power_status)
+    BEGIN
+        INSERT INTO activity_logs (user_id, device_id, action_type, description)
+        SELECT 
+            i.user_id, 
+            i.device_id, 
+            'CONTROL', 
+            N'Thiết bị ' + i.name + N' thay đổi trạng thái thành: ' + i.power_status
+        FROM inserted i;
+    END
+END;
+GO
+
+-- 3. FIX PROCEDURE Get_Sensor_Data_For_Export
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[SP_Get_Sensor_Data_For_Export]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[SP_Get_Sensor_Data_For_Export];
+GO
+
 CREATE PROCEDURE SP_Get_Sensor_Data_For_Export
     @SensorID BIGINT,
     @FromDate DATETIMEOFFSET,
@@ -205,20 +255,19 @@ BEGIN
     FROM sensor_data sd
     WHERE sd.sensor_id = @SensorID 
       AND sd.recorded_at BETWEEN @FromDate AND @ToDate
-END
+END;
 GO 
 
--- PROCEDURE KIỂM TRA VÀ THỰC THI LỊCH TRÌNH
-DROP PROCEDURE IF EXISTS SP_Process_Schedules
+-- 4. FIX PROCEDURE Process_Schedules
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[SP_Process_Schedules]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[SP_Process_Schedules];
 GO
 
 CREATE PROCEDURE SP_Process_Schedules
 AS
 BEGIN
     DECLARE @CurrentTime TIME = CAST(SYSDATETIMEOFFSET() AS TIME);
-    DECLARE @Today INT = DATEPART(DW, SYSDATETIMEOFFSET()); -- 1: CN, 2: Thứ 2...
 
-    -- Tìm các lịch trình khớp giờ và ngày, chưa chạy trong chu kỳ này
     SELECT 
         s.schedule_id, 
         s.device_id, 
@@ -230,67 +279,48 @@ BEGIN
       AND ABS(DATEDIFF(MINUTE, s.start_time, @CurrentTime)) <= 1
       AND (s.last_run_at IS NULL OR DATEDIFF(HOUR, s.last_run_at, SYSDATETIMEOFFSET()) >= 12);
 
-    -- Cập nhật thời gian chạy cuối để tránh lặp lại trong cùng 1 phút
     UPDATE schedules 
     SET last_run_at = SYSDATETIMEOFFSET()
     WHERE is_active = 1 
       AND ABS(DATEDIFF(MINUTE, start_time, @CurrentTime)) <= 1;
 END;
 GO
-
 -- ======================================================================
 -- SAMPLE DATA
 -- ======================================================================
 
--- HOME
 INSERT INTO homes (home_name, address)
 VALUES (N'Nhà Thông Minh BK', N'TP.HCM');
 
--- USER
+-- Sửa lại đoạn này trong file SQL của bà nha
 INSERT INTO users (home_id, username, password_hash, email, phone, role)
 VALUES 
-(1, 'admin', '$2b$10$KbQiVq6FhM9N0zjXh7p9Yu2G6Xk2HnY4p1Gv6h6Q8mT4r8yZx8cGm', 'admin@smarthome.com', '0900000000', 'owner'), -- ⭐ SỬA: bcrypt hash cho 123456
-(1, 'user1', '$2b$10$KbQiVq6FhM9N0zjXh7p9Yu2G6Xk2HnY4p1Gv6h6Q8mT4r8yZx8cGm', 'user1@smarthome.com', '0900000001', 'user'); -- ⭐ SỬA: bcrypt hash
--- DEVICES
-INSERT INTO devices (user_id, name, type, location, mqtt_topic_pub, mqtt_topic_sub, connection_status, power_status)
+(1, 'admin', '$2b$10$/8JHqswWX2VJdDbQa.kXyOUtm1oEu9AQmXmpMW.k3q3jVO2tyVInW', 'admin@smarthome.com', '0900000000', 'owner'), 
+(1, 'user1', '$2b$10$/8JHqswWX2VJdDbQa.kXyOUtm1oEu9AQmXmpMW.k3q3jVO2tyVInW', 'user1@smarthome.com', '0900000001', 'user');
+INSERT INTO devices (user_id, name, type, location, mqtt_topic_pub, mqtt_topic_sub, connection_status, power_status, control_mode)
 VALUES
-(1, N'Đèn phòng khách', 'light', N'Phòng khách', 'home/light1/set', 'home/light1/status', 'online', 'off'),
-(1, N'Quạt phòng ngủ', 'fan', N'Phòng ngủ', 'home/fan1/set', 'home/fan1/status', 'online', 'on');
+(1, N'Đèn phòng khách', 'light', N'Phòng khách', 'home/light1/set', 'home/light1/status', 'online', 'off', 'manual'),
+(1, N'Quạt phòng ngủ', 'fan', N'Phòng ngủ', 'home/fan1/set', 'home/fan1/status', 'online', 'on', 'automation');
 
--- SENSORS
 INSERT INTO sensors (user_id, name, type, unit, mqtt_topic)
 VALUES
-(1, N'Cảm biến nhiệt độ', 'temperature', '°C', 'home/temp1'),
-(1, N'Cảm biến độ ẩm', 'humidity', '%', 'home/humidity1'),
-(1, N'Cảm biến ánh sáng', 'light', 'lux', 'home/light_sensor');
+(1, N'Cảm biến nhiệt độ', 'temperature', '°C', 'nhietdo'),
+(1, N'Cảm biến độ ẩm', 'humidity', '%', 'doam'),
+(1, N'Cảm biến ánh sáng', 'light', 'lux', 'anhsang');
 
--- SENSOR DATA
 INSERT INTO sensor_data (sensor_id, value)
 VALUES
-(1, 28.5),
-(1, 29.1),
-(2, 65.2),
-(2, 70.4),
-(3, 300),
-(3, 450);
+(1, 28.5), (1, 29.1), (2, 65.2), (2, 70.4), (3, 300), (3, 450);
 
-
--- AUTOMATION RULE
 INSERT INTO automation_rules (user_id, name)
-VALUES
-(1, N'Tự bật quạt khi nóng');
+VALUES (1, N'Tự bật quạt khi nóng');
 
--- AUTOMATION CONDITION
 INSERT INTO automation_conditions (rule_id, sensor_id, operator, target_value)
-VALUES
-(1, 1, '>', 30);
+VALUES (1, 1, '>', 30);
 
--- AUTOMATION ACTION
 INSERT INTO automation_actions (rule_id, device_id, action_type)
-VALUES
-(1, 2, 'turn_on');
+VALUES (1, 2, 'turn_on');
 
--- SCHEDULE
 INSERT INTO schedules (device_id, name, action_type, start_time, end_time, start_date, end_date, is_active)
 VALUES
 (1, N'Bật đèn buổi tối', 'turn_on', '18:00', '19:00', '2026-05-01', '2026-05-01', 1);
@@ -339,6 +369,9 @@ SELECT * FROM schedules;
 PRINT '===== ACTIVITY LOGS ====='
 SELECT * FROM activity_logs;
 
-UPDATE sensors SET mqtt_topic='nhietdo' WHERE type='temperature';
-UPDATE sensors SET mqtt_topic='doam' WHERE type='humidity';
-UPDATE sensors SET mqtt_topic='anhsang' WHERE type='light';
+UPDATE sensor_data SET recorded_at = DATEADD(minute, -10, SYSDATETIMEOFFSET()) WHERE value = 28.5;
+UPDATE sensor_data SET recorded_at = DATEADD(minute, -5, SYSDATETIMEOFFSET()) WHERE value = 29.1;
+UPDATE sensor_data SET recorded_at = DATEADD(minute, -15, SYSDATETIMEOFFSET()) WHERE value = 65.2;
+UPDATE sensor_data SET recorded_at = DATEADD(minute, -8, SYSDATETIMEOFFSET()) WHERE value = 70.4;
+UPDATE sensor_data SET recorded_at = DATEADD(minute, -20, SYSDATETIMEOFFSET()) WHERE value = 300;
+UPDATE sensor_data SET recorded_at = DATEADD(minute, -2, SYSDATETIMEOFFSET()) WHERE value = 450;
