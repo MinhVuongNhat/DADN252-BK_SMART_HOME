@@ -1,14 +1,13 @@
 import { io } from "socket.io-client";
-import ChartPage from "../pages/chart.jsx"
-const socket = io("http://localhost:5000"); // URL backend
 
-socket.on("connect", () => console.log("Connected to server"));
+// Đảm bảo URL này trỏ đúng tới Backend của bạn
+const SOCKET_URL = "http://localhost:5000"; 
+const socket = io(SOCKET_URL);
 
-socket.on("sensor-data", (data) => {
-  console.log("Realtime sensor:", data);
-  // Cập nhật chart ở đây
-  ChartPage.data.datasets[0].data.push(data.value);
-  ChartPage.update(); // Chart.js tự render
-});
+socket.on("connect", () => console.log("🟢 Connected to WebSocket Server"));
+socket.on("disconnect", () => console.log("🔴 Disconnected from WebSocket Server"));
+
+// XÓA ĐOẠN ChartPage.update() Ở ĐÂY VÌ ĐÂY KHÔNG PHẢI LÀ CÁCH REACT HOẠT ĐỘNG
+// React sẽ tự render khi state thay đổi.
 
 export default socket;
