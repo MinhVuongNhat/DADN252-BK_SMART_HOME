@@ -1,169 +1,93 @@
-const sql = require("../config/db");
+const db = require("../config/db");
 
 /**
  * Chuẩn hoá time "HH:mm" -> "HH:mm:ss"
  */
 function normalizeTime(t) {
   if (!t) return null;
-  return t.length === 5 ? `${t}:00` : t;
+  if (t.length === 5) return `${t}:00`;
+  return t;
 }
 
 /**
- * Validate business rules cơ bản
+ * Validate business rules
  */
 function validateScheduleInput(data) {
-  const {
-    device_id,
-    action_type,
-    start_time,
-    end_time,
-    start_date,
-    end_date
-  } = data;
+  const { start_time, end_time } = data;
+  if (!start_time || !end_time) throw new Error("Giờ bắt đầu và kết thúc là bắt buộc");
 
-  if (!device_id) throw new Error("device_id is required");
-  if (!action_type) throw new Error("action_type is required");
-  if (!start_time || !end_time) throw new Error("start_time & end_time are required");
+  const s = normalizeTime(start_time);
+  const e = normalizeTime(end_time);
 
-  if (start_time >= end_time) {
-    throw new Error("start_time must be less than end_time");
+  if (s >= e) {
+    throw new Error("Giờ bắt đầu phải nhỏ hơn giờ kết thúc");
   }
-
-  if (start_date && end_date && start_date > end_date) {
-    throw new Error("start_date must be <= end_date");
-  }
+  return { sTime: s, eTime: e };
 }
 
 /**
- * Check device tồn tại (FK fail sẽ throw nhưng check trước để trả lỗi đẹp hơn)
+ * UPSERT: Tự động cập nhật hoặc tạo mới lịch trình cho 1 thiết bị
+ * Dùng cho trường hợp lưu từ Modal thiết bị
  */
-async function ensureDeviceExists(device_id) {
-  const result = await sql.query`
-    SELECT device_id FROM devices WHERE device_id = ${device_id}
+exports.upsertDeviceSchedule = async (deviceId, data) => {
+  const { sTime, eTime } = validateScheduleInput(data);
+  const { name, action_type, target_value } = data;
+
+  // Kiểm tra xem thiết bị đã có schedule chưa
+  const existing = await db.query`
+    SELECT schedule_id FROM schedules WHERE device_id = ${deviceId}
   `;
-  if (result.recordset.length === 0) {
-    throw new Error("Device not found");
+
+  if (existing.recordset.length > 0) {
+    // UPDATE
+    const id = existing.recordset[0].schedule_id;
+    return await this.updateSchedule(id, {
+      start_time: sTime,
+      end_time: eTime,
+      name: name || "Lịch trình mặc định",
+      is_active: 1
+    });
+  } else {
+    // CREATE NEW
+    const result = await db.query`
+      INSERT INTO schedules (device_id, name, action_type, start_time, end_time, is_active)
+      OUTPUT INSERTED.*
+      VALUES (${deviceId}, ${name || 'Lịch trình'}, ${action_type || 'toggle'}, ${sTime}, ${eTime}, 1)
+    `;
+    return result.recordset[0];
   }
-}
-
-/**
- * (Optional nâng cao) Check overlap schedule
- */
-async function checkOverlap(device_id, start_time, end_time, start_date, end_date, excludeId = null) {
-  const result = await sql.query`
-    SELECT * FROM schedules
-    WHERE device_id = ${device_id}
-      AND is_active = 1
-      ${excludeId ? sql`AND schedule_id != ${excludeId}` : sql``}
-      AND (
-        (start_time < ${end_time} AND end_time > ${start_time})
-      )
-  `;
-
-  if (result.recordset.length > 0) {
-    throw new Error("Schedule time overlaps with existing schedule");
-  }
-}
-
-/**
- * CREATE
- */
-exports.createSchedule = async (data) => {
-  validateScheduleInput(data);
-
-  const {
-    device_id,
-    name,
-    action_type,
-    target_value,
-    start_time,
-    end_time,
-    start_date,
-    end_date
-  } = data;
-
-  await ensureDeviceExists(device_id);
-
-  const sTime = normalizeTime(start_time);
-  const eTime = normalizeTime(end_time);
-
-  await checkOverlap(device_id, sTime, eTime, start_date, end_date);
-
-  const result = await sql.query`
-    INSERT INTO schedules (
-      device_id,
-      name,
-      action_type,
-      target_value,
-      start_time,
-      end_time,
-      start_date,
-      end_date,
-      is_active
-    )
-    OUTPUT INSERTED.*
-    VALUES (
-      ${device_id},
-      ${name || null},
-      ${action_type},
-      ${target_value || null},
-      ${sTime},
-      ${eTime},
-      ${start_date || null},
-      ${end_date || null},
-      1
-    )
-  `;
-
-  return result.recordset[0];
 };
 
 /**
  * GET by device
  */
 exports.getSchedulesByDevice = async (deviceId) => {
-  const result = await sql.query`
-    SELECT *
-    FROM schedules
-    WHERE device_id = ${deviceId}
-    ORDER BY created_at DESC
+  const result = await db.query`
+    SELECT * FROM schedules WHERE device_id = ${deviceId}
   `;
   return result.recordset;
 };
 
 /**
- * UPDATE
+ * UPDATE (Đã tối ưu lại query)
  */
 exports.updateSchedule = async (id, data) => {
-  const fields = [];
-  const request = new sql.Request();
+  // Lấy dữ liệu cũ để tránh mất data khi update partial
+  const sTime = data.start_time ? normalizeTime(data.start_time) : undefined;
+  const eTime = data.end_time ? normalizeTime(data.end_time) : undefined;
 
-  Object.entries(data).forEach(([key, value]) => {
-    if (value !== undefined) {
-      fields.push(`${key} = @${key}`);
-      request.input(key, value);
-    }
-  });
-
-  if (fields.length === 0) {
-    throw new Error("No fields to update");
-  }
-
-  request.input("id", id);
-
-  const query = `
+  const result = await db.query`
     UPDATE schedules
-    SET ${fields.join(", ")}
+    SET 
+      name = ISNULL(${data.name}, name),
+      start_time = ISNULL(${sTime}, start_time),
+      end_time = ISNULL(${eTime}, end_time),
+      is_active = ISNULL(${data.is_active}, is_active)
     OUTPUT INSERTED.*
-    WHERE schedule_id = @id
+    WHERE schedule_id = ${id}
   `;
 
-  const result = await request.query(query);
-
-  if (result.recordset.length === 0) {
-    throw new Error("Schedule not found");
-  }
-
+  if (result.recordset.length === 0) throw new Error("Không tìm thấy lịch trình");
   return result.recordset[0];
 };
 
@@ -171,33 +95,9 @@ exports.updateSchedule = async (id, data) => {
  * DELETE
  */
 exports.deleteSchedule = async (id) => {
-  const result = await sql.query`
-    DELETE FROM schedules
-    OUTPUT DELETED.*
-    WHERE schedule_id = ${id}
+  const result = await db.query`
+    DELETE FROM schedules OUTPUT DELETED.* WHERE schedule_id = ${id}
   `;
-
-  if (result.recordset.length === 0) {
-    throw new Error("Schedule not found");
-  }
-
+  if (result.recordset.length === 0) throw new Error("Không tìm thấy lịch trình");
   return true;
-};
-
-/**
- * TOGGLE ACTIVE
- */
-exports.toggleSchedule = async (id, is_active) => {
-  const result = await sql.query`
-    UPDATE schedules
-    SET is_active = ${is_active}
-    OUTPUT INSERTED.*
-    WHERE schedule_id = ${id}
-  `;
-
-  if (result.recordset.length === 0) {
-    throw new Error("Schedule not found");
-  }
-
-  return result.recordset[0];
 };

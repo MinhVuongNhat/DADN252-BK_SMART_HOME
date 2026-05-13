@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import axios from "../api/axios";
-import DeviceModal from "../components/modal/DeviceModal";
 import DeviceCard from "../components/cards/DeviceCard";
 import SensorCard from "../components/cards/SensorCard";
 import AddDeviceModal from "../components/modal/AddDeviceModal";

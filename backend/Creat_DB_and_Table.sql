@@ -188,25 +188,6 @@ CREATE TABLE activity_logs (
 );
 GO
 
--- TRIGGER TỰ ĐỘNG HÓA LOG
-CREATE TRIGGER TRG_Log_Device_Changes
-ON devices
-AFTER UPDATE
-AS
-BEGIN
-    IF UPDATE(power_status)
-    BEGIN
-        INSERT INTO activity_logs (user_id, device_id, action_type, description)
-        SELECT 
-            i.user_id, 
-            i.device_id, 
-            'CONTROL', 
-            N'Thiết bị ' + i.name + N' thay đổi trạng thái thành: ' + i.power_status
-        FROM inserted i;
-    END
-END;
-GO
-
 -- FUNCTION ĐỊNH DẠNG DỮ LIỆU TỪ FILE CSV
 CREATE PROCEDURE SP_Get_Sensor_Data_For_Export
     @SensorID BIGINT,
@@ -246,15 +227,14 @@ BEGIN
     FROM schedules s
     JOIN devices d ON s.device_id = d.device_id
     WHERE s.is_active = 1
-      AND ABS(DATEDIFF(MINUTE, s.time_start, @CurrentTime)) <= 1
-      AND (s.days_of_week LIKE '%' + CAST(@Today AS NVARCHAR) + '%')
+      AND ABS(DATEDIFF(MINUTE, s.start_time, @CurrentTime)) <= 1
       AND (s.last_run_at IS NULL OR DATEDIFF(HOUR, s.last_run_at, SYSDATETIMEOFFSET()) >= 12);
 
     -- Cập nhật thời gian chạy cuối để tránh lặp lại trong cùng 1 phút
     UPDATE schedules 
     SET last_run_at = SYSDATETIMEOFFSET()
     WHERE is_active = 1 
-      AND ABS(DATEDIFF(MINUTE, time_start, @CurrentTime)) <= 1;
+      AND ABS(DATEDIFF(MINUTE, start_time, @CurrentTime)) <= 1;
 END;
 GO
 
