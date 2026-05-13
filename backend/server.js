@@ -17,6 +17,8 @@ const swaggerSpec = require("./docs/swagger");
 const userRoutes = require("./routes/user.routes");
 const authRoutes = require('./routes/auth.routes');
 
+const logRoutes = require("./routes/log.routes");
+
 require("./services/mqtt.service");
 
 const app = express();
@@ -34,19 +36,22 @@ app.use(
   swaggerUi.setup(swaggerSpec)
 );
 
-app.use(cors());
-app.use(express.json());
-app.use('/api/auth', authRoutes);
-app.use('/api/sensors', require('./routes/sensor.routes'));
-
 app.get("/", (req, res) => {
   res.send("BK SmartHome API running 🚀");
 });
 
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/devices", deviceRoutes);
-
+app.use(cors());
+app.use(express.json());
+app.use('/api/auth', authRoutes);
 app.use("/api/user", userRoutes);
+
+app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/devices", deviceRoutes);
+app.use('/api/sensors', require('./routes/sensor.routes'));
+
+app.use('/api/logs', logRoutes);
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 sequelize.authenticate()
   .then(() => console.log("✅ Database connected"))

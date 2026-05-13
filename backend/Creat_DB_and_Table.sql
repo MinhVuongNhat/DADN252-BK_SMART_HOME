@@ -188,6 +188,8 @@ CREATE TABLE activity_logs (
 );
 GO
 
+DROP PROCEDURE IF EXISTS SP_Get_Sensor_Data_For_Export
+GO
 -- FUNCTION ĐỊNH DẠNG DỮ LIỆU TỪ FILE CSV
 CREATE PROCEDURE SP_Get_Sensor_Data_For_Export
     @SensorID BIGINT,
@@ -204,7 +206,6 @@ BEGIN
     WHERE sd.sensor_id = @SensorID 
       AND sd.recorded_at BETWEEN @FromDate AND @ToDate
 END
-
 GO 
 
 -- PROCEDURE KIỂM TRA VÀ THỰC THI LỊCH TRÌNH
@@ -222,7 +223,6 @@ BEGIN
         s.schedule_id, 
         s.device_id, 
         s.action_type, 
-        s.target_value,
         d.mqtt_topic_pub
     FROM schedules s
     JOIN devices d ON s.device_id = d.device_id
@@ -295,10 +295,12 @@ INSERT INTO schedules (device_id, name, action_type, start_time, end_time, start
 VALUES
 (1, N'Bật đèn buổi tối', 'turn_on', '18:00', '19:00', '2026-05-01', '2026-05-01', 1);
 
--- ALERT
-INSERT INTO alerts (sensor_id, severity, message)
+-- LOGS
+INSERT INTO activity_logs (user_id, device_id, action_type, description, created_at)
 VALUES
-(1, 'warning', N'Nhiệt độ cao');
+(1, 1, 'turn on', 'no', '2026-05-01'),
+(1, 1, 'turn off', 'no', '2026-05-01'),
+(1, 2, 'turn on', 'no', '2026-05-01');
 
 -- ======================================================================
 -- SHOW DATA
@@ -333,9 +335,6 @@ SELECT * FROM automation_actions;
 
 PRINT '===== SCHEDULES ====='
 SELECT * FROM schedules;
-
-PRINT '===== ALERTS ====='
-SELECT * FROM alerts;
 
 PRINT '===== ACTIVITY LOGS ====='
 SELECT * FROM activity_logs;

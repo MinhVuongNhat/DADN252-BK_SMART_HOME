@@ -7,25 +7,36 @@ const Log = sequelize.define("Log", {
     primaryKey: true, 
     autoIncrement: true 
   },
+
+  user_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+
   device_id: {
     type: DataTypes.BIGINT,
     allowNull: true
   },
+
   action_type: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: DataTypes.STRING(50), // NVARCHAR(50)
+    allowNull: true
   },
+
   description: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT, // NVARCHAR(MAX)
+    allowNull: true
   },
+
   created_at: { 
-    type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
+    type: DataTypes.DATE, // Sequelize không có DATETIMEOFFSET riêng
+    allowNull: true,
+    defaultValue: DataTypes.NOW
   }
+
 }, { 
-  tableName: "logs", 
+  tableName: "activity_logs", // FIX
   timestamps: false 
 });
 
-// Export the model directly
 module.exports = Log;
