@@ -3,15 +3,13 @@ import lightImg from "../../assets/led.png";
 import fanImg from "../../assets/fan.png";
 
 export default function AddDeviceModal({ onClose, onSave, currentCount }) {
-  // Tạo tên mặc định dạng Thiết bị 01, 02...
   const defaultName = `Thiết bị ${(currentCount + 1).toString().padStart(2, '0')}`;
   
   const [form, setForm] = useState({
-    device_id: `DEV_${Date.now()}`, // Tạo ID duy nhất
+    // Xóa dòng tạo ID ảo, để backend lo
     name: defaultName,
     type: "light",
-    power_status: "off",
-    control_mode: "manual",
+    location: "Phòng khách" // Thêm location vì backend có vẻ cần (hoặc chuỗi rỗng)
   });
 
   const img = form.type === "light" ? lightImg : fanImg;
@@ -49,6 +47,17 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
               <option value="fan">Quạt</option>
             </select>
           </div>
+          
+          <div>
+            <label className="text-sm font-medium">Vị trí</label>
+            <input
+              type="text"
+              value={form.location}
+              onChange={(e) => setForm({...form, location: e.target.value})}
+              className="w-full border p-2 rounded mt-1 outline-blue-500"
+              placeholder="Ví dụ: Phòng khách..."
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-8">
@@ -56,7 +65,10 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
             Hủy
           </button>
           <button 
-            onClick={() => { onSave(form); onClose(); }}
+            onClick={() => { 
+                // Gửi form đi
+                onSave(form); 
+            }}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
           >
             Thêm thiết bị

@@ -292,11 +292,12 @@ GO
 INSERT INTO homes (home_name, address)
 VALUES (N'Nhà Thông Minh BK', N'TP.HCM');
 
--- Sửa lại đoạn này trong file SQL của bà nha
+-- Sửa lại đoạn này trong file SQL của bà nha *123456
 INSERT INTO users (home_id, username, password_hash, email, phone, role)
 VALUES 
 (1, 'admin', '$2b$10$/8JHqswWX2VJdDbQa.kXyOUtm1oEu9AQmXmpMW.k3q3jVO2tyVInW', 'admin@smarthome.com', '0900000000', 'owner'), 
 (1, 'user1', '$2b$10$/8JHqswWX2VJdDbQa.kXyOUtm1oEu9AQmXmpMW.k3q3jVO2tyVInW', 'user1@smarthome.com', '0900000001', 'user');
+
 INSERT INTO devices (user_id, name, type, location, mqtt_topic_pub, mqtt_topic_sub, connection_status, power_status, control_mode)
 VALUES
 (1, N'Đèn phòng khách', 'light', N'Phòng khách', 'den', 'den', 'online', 'off', 'automation'),

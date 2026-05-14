@@ -1,11 +1,10 @@
 import lightImg from "../../assets/led.png";
 import fanImg from "../../assets/fan.png";
 
-export default function DeviceCard({ device, onSetting, onDelete }) {
+export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
   const img = device.type === "light" ? lightImg : fanImg;
   const isOn = device.power_status === "on";
 
-  // Map tên chế độ hiển thị
   const modeLabels = {
     manual: "Thủ công",
     automation: "Tự động",
@@ -19,12 +18,16 @@ export default function DeviceCard({ device, onSetting, onDelete }) {
           <h3 className="font-bold text-lg text-gray-800">{device.name}</h3>
           <p className="text-xs text-gray-400 uppercase tracking-wider">{device.type}</p>
         </div>
-        {/* Badge trạng thái Bật/Tắt */}
-        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-          isOn ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
-        }`}>
+        
+        {/* Đã sửa thẻ span thành thẻ button để CÓ THỂ BẤM ĐƯỢC */}
+        <button 
+          onClick={() => onToggle(device.device_id, 'power')}
+          className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase cursor-pointer hover:opacity-80 transition-opacity ${
+            isOn ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
+          }`}
+        >
           {isOn ? "● Đang bật" : "○ Đang tắt"}
-        </span>
+        </button>
       </div>
 
       <div className="flex justify-center my-6">
@@ -35,10 +38,15 @@ export default function DeviceCard({ device, onSetting, onDelete }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        {/* Hiển thị chế độ hiện tại dưới dạng text nhẹ nhàng */}
-        <div className="text-sm text-gray-500 bg-gray-50 py-2 px-3 rounded-lg flex justify-between">
+        <div className="text-sm text-gray-500 bg-gray-50 py-2 px-3 rounded-lg flex justify-between items-center">
           <span>Chế độ:</span>
-          <span className="font-medium text-blue-600">{modeLabels[device.control_mode]}</span>
+          {/* Nút nhỏ để click đổi nhanh chế độ */}
+          <button 
+            onClick={() => onToggle(device.device_id, 'mode')}
+            className="font-medium text-blue-600 hover:underline"
+          >
+            {modeLabels[device.control_mode]}
+          </button>
         </div>
 
         <div className="flex gap-2">

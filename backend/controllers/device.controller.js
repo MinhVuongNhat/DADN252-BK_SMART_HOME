@@ -1,58 +1,40 @@
 const db = require("../config/db");
 const logController = require("./log.controller");
-const service = require("../services/schedule.service");
 
+// (Hàm getDevices giữ nguyên như lần fix trước)
 exports.getDevices = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT 
-        device_id,
-        name,
-        type,
-        location,
-        power_status,
-        control_mode,
-        connection_status
+        device_id, name, type, location, power_status, control_mode, connection_status
       FROM devices
       ORDER BY created_at DESC
     `);
 
-    res.json({
-      success: true,
-      data: result.recordset
-    });
+    const deviceData = result.recordset || result.rows || (Array.isArray(result) ? result : []);
+    res.json({ success: true, data: deviceData });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 exports.getDeviceById = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Sử dụng LEFT JOIN để lấy thông tin schedule nếu có
-    const result = await db.query`
-      SELECT 
-        d.*, 
-        s.start_time, 
-        s.end_time,
-        s.is_active as schedule_active
+    const result = await db.query(`
+      SELECT d.*, s.start_time, s.end_time, s.is_active as schedule_active
       FROM devices d
       LEFT JOIN schedules s ON d.device_id = s.device_id
       WHERE d.device_id = ${id}
-    `;
+    `);
 
-    if (result.recordset.length === 0) {
+    // Xử lý mảng trả về an toàn
+    const data = result.recordset || result.rows || result;
+    if (!data || data.length === 0) {
       return res.status(404).json({ success: false, message: "Device not found" });
     }
 
-    res.json({
-      success: true,
-      data: result.recordset[0]
-    });
+    res.json({ success: true, data: data[0] });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -60,62 +42,41 @@ exports.getDeviceById = async (req, res) => {
 
 exports.createDevice = async (req, res) => {
   try {
-    const { name, type, location } = req.body;
+    // Thêm fallback an toàn tránh undefined
+    const name = req.body.name || 'Thiết bị mới';
+    const type = req.body.type || 'light';
+    const location = req.body.location || '';
 
     await db.query(`
-      INSERT INTO devices
-      (
-        user_id,
-        name,
-        type,
-        location,
-        power_status,
-        control_mode,
-        connection_status
-      )
-      VALUES
-      (
-        1,
-        N'${name}',
-        '${type}',
-        N'${location}',
-        'off',
-        'manual',
-        'online'
-      )
+      INSERT INTO devices (user_id, name, type, location, power_status, control_mode, connection_status)
+      VALUES (1, N'${name}', '${type}', N'${location}', 'off', 'manual', 'online')
     `);
 
-    res.json({
-      success: true,
-      message: "Tạo thiết bị thành công"
-    });
+    res.json({ success: true, message: "Tạo thiết bị thành công" });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 exports.updateDevice = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, power_status, control_mode, start_time, end_time } = req.body;
+    // Lấy giá trị với fallback an toàn để chống lỗi CHECK CONSTRAINT
+    const name = req.body.name || 'Thiết bị';
+    const power_status = req.body.power_status || 'off'; 
+    const control_mode = req.body.control_mode || 'manual';
+    const start_time = req.body.start_time;
+    const end_time = req.body.end_time;
 
-    // 1. Cập nhật thông tin cơ bản của thiết bị
+    // 1. Cập nhật thiết bị
     await db.query(`
       UPDATE devices
-      SET
-        name = N'${name}',
-        power_status = '${power_status}',
-        control_mode = '${control_mode}'
+      SET name = N'${name}', power_status = '${power_status}', control_mode = '${control_mode}'
       WHERE device_id = ${id}
     `);
 
-    // 2. Nếu chế độ là 'schedule', cập nhật hoặc tạo mới lịch trình
+    // 2. Xử lý schedule
     if (control_mode === 'schedule' && start_time && end_time) {
-      // Logic này tùy thuộc vào việc bạn đã có record schedule chưa
-      // Ở đây tôi giả sử bạn dùng service để xử lý (Upsert)
       await db.query(`
         IF EXISTS (SELECT 1 FROM schedules WHERE device_id = ${id})
           UPDATE schedules SET start_time = '${start_time}', end_time = '${end_time}', is_active = 1 WHERE device_id = ${id}
@@ -124,15 +85,15 @@ exports.updateDevice = async (req, res) => {
       `);
     }
 
-    // 3. GHI LOG: Sau khi update thành công, tạo một bản ghi log
+    // 3. Ghi log
     await logController.internalCreateLog({
-      userId: 1, // Giả sử user đang login là 1
+      userId: 1,
       deviceId: id,
       actionType: 'UPDATE_DEVICE',
       description: `Cập nhật thiết bị ${name}: Trạng thái ${power_status}, Chế độ ${control_mode}`
     });
 
-    res.json({ success: true, message: "Cập nhật thành công và đã ghi log" });
+    res.json({ success: true, message: "Cập nhật thành công" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -142,42 +103,44 @@ exports.deleteDevice = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await db.query(`
-      DELETE FROM devices
-      WHERE device_id = ${id}
-    `);
+    // SỬA LỖI FK CONSTRAINT: Xóa các bảng con trước
+    // Nếu tương lai có bảng log_devices hoặc automation_actions, bạn cũng cần thêm lệnh DELETE ở đây
+    await db.query(`DELETE FROM schedules WHERE device_id = ${id}`);
+    
+    // Sau đó mới xóa thiết bị
+    await db.query(`DELETE FROM devices WHERE device_id = ${id}`);
 
-    res.json({
-      success: true,
-      message: "Xóa thiết bị thành công"
-    });
+    res.json({ success: true, message: "Xóa thiết bị thành công" });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// ĐÃ VIẾT LẠI HOÀN TOÀN HÀM TOGGLE
 exports.toggleDevice = async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, mode, status } = req.body; 
-    
+    const { type } = req.body; 
     let actionDesc = "";
 
+    // Dùng SQL Server tự đảo trạng thái (Không cần Frontend gửi trạng thái lên)
     if (type === "power") {
-      // Giả sử FE gửi status mới lên hoặc BE tự toggle
-      await db.query(`UPDATE devices SET power_status = '${status}' WHERE device_id = ${id}`);
-      actionDesc = `Thay đổi nguồn thành: ${status.toUpperCase()}`;
+      await db.query(`
+        UPDATE devices 
+        SET power_status = CASE WHEN power_status = 'on' THEN 'off' ELSE 'on' END 
+        WHERE device_id = ${id}
+      `);
+      actionDesc = `Thay đổi nguồn thiết bị ${id}`;
+    } else if (type === "mode") {
+      await db.query(`
+        UPDATE devices 
+        SET control_mode = CASE WHEN control_mode = 'automation' THEN 'manual' ELSE 'automation' END 
+        WHERE device_id = ${id}
+      `);
+      actionDesc = `Thay đổi chế độ thiết bị ${id}`;
     }
 
-    if (type === "mode") {
-      await db.query(`UPDATE devices SET control_mode = '${mode}' WHERE device_id = ${id}`);
-      actionDesc = `Thay đổi chế độ thành: ${mode}`;
-    }
-
-    // GHI LOG THAO TÁC NHANH
+    // Ghi log
     await logController.internalCreateLog({
       userId: 1,
       deviceId: id,
@@ -190,6 +153,8 @@ exports.toggleDevice = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// ... (Các hàm updateDeviceMode và updateDevicePower giữ nguyên nếu bạn vẫn dùng API lẻ)
 
 exports.updateDeviceMode = async (req, res) => {
   try {
