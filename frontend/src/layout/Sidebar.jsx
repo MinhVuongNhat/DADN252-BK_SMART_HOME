@@ -79,12 +79,6 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Search */}
-      <input
-        placeholder="Tìm kiếm..."
-        className="w-full p-2 border rounded mb-6 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-      />
-
       {/* Menu */}
       <div className="flex flex-col gap-2 text-gray-700">
         {menu.map((item) => (

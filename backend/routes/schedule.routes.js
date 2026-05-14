@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
+// 1. IMPORT CẢNH SÁT BẢO VỆ VÀO NÈ BÀ
+const authMiddleware = require("../middlewares/auth.middleware");
+
 const {
   getSchedulesByDevice,
   createSchedule,
@@ -33,7 +36,8 @@ const {
  *       200:
  *         description: Schedule list fetched successfully
  */
-router.get("/devices/:id/schedules", getSchedulesByDevice);
+// 2. CHÈN BẢO VỆ VÀO TỪNG ĐƯỜNG DẪN
+router.get("/devices/:id/schedules", authMiddleware, getSchedulesByDevice);
 
 /**
  * @swagger
@@ -76,7 +80,7 @@ router.get("/devices/:id/schedules", getSchedulesByDevice);
  *       201:
  *         description: Schedule created successfully
  */
-router.post("/", createSchedule);
+router.post("/", authMiddleware, createSchedule);
 
 /**
  * @swagger
@@ -118,7 +122,7 @@ router.post("/", createSchedule);
  *       200:
  *         description: Schedule updated successfully
  */
-router.put("/:id", updateSchedule);
+router.put("/:id", authMiddleware, updateSchedule);
 
 /**
  * @swagger
@@ -137,7 +141,7 @@ router.put("/:id", updateSchedule);
  *       200:
  *         description: Schedule deleted successfully
  */
-router.delete("/:id", deleteSchedule);
+router.delete("/:id", authMiddleware, deleteSchedule);
 
 /**
  * @swagger
@@ -168,6 +172,6 @@ router.delete("/:id", deleteSchedule);
  *       200:
  *         description: Schedule active state updated successfully
  */
-router.patch("/:id/active", updateScheduleActive);
+router.patch("/:id/active", authMiddleware, updateScheduleActive);
 
 module.exports = router;

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import socket from "../socket/socket";
 import axios from "../api/axios";
-import ChartPage from "./chart"; 
+import ChartPage from "./chart";
 
 export default function Dashboard() {
   const [tab, setTab] = useState("overview");
@@ -10,7 +10,6 @@ export default function Dashboard() {
   const [sensor, setSensor] = useState({ nhietdo: 0, doam: 0, anhsang: 0 });
 
   useEffect(() => {
-    // Đưa fetchData vào trong useEffect
     const fetchData = async () => {
       try {
         const results = await Promise.allSettled([
@@ -24,16 +23,21 @@ export default function Dashboard() {
 
         if (results[1].status === "fulfilled") {
           const sensorObj = { nhietdo: 0, doam: 0, anhsang: 0 };
-          results[1].value.data.forEach((s) => {
-            // Dùng String(s.id) để đảm bảo so sánh chuỗi với chuỗi
-            if (String(s.id) === "1") sensorObj.nhietdo = s.current_value;
-            if (String(s.id) === "2") sensorObj.doam = s.current_value;
-            if (String(s.id) === "3") sensorObj.anhsang = s.current_value;
+          const data = results[1].value.data;
+
+          data.forEach((s) => {
+            // Bao sân cả id lẫn sensor_id
+            const sId = String(s.id || s.sensor_id);
+            if (sId === "1") sensorObj.nhietdo = s.current_value;
+            if (sId === "2") sensorObj.doam = s.current_value;
+            if (sId === "3") sensorObj.anhsang = s.current_value;
           });
+          
+          console.log("Dữ liệu cảm biến mới nhất:", sensorObj);
           setSensor(sensorObj);
         }
       } catch (err) {
-        console.error("Lỗi lấy dữ liệu:", err);
+        console.error("Lỗi lấy dữ liệu dashboard:", err);
       }
     };
 
@@ -44,11 +48,11 @@ export default function Dashboard() {
     const handler = (data) => {
       setSensor((prev) => ({
         ...prev,
-        [data.feed]: data.value, 
+        [data.feed]: data.value,
       }));
     };
 
-    socket.on("sensor_update", handler); 
+    socket.on("sensor_update", handler);
 
     return () => {
       socket.off("sensor_update", handler);
@@ -88,14 +92,13 @@ export default function Dashboard() {
   );
 }
 
-// ================= UI COMPONENT =================
-
+// ================= UI COMPONENTS (Giữ nguyên bên dưới) =================
 function Tab({ children, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`pb-2 ${
-        active ? "border-b-2 border-blue-500 text-blue-600 font-semibold" : ""
+      className={`pb-2 transition-all ${
+        active ? "border-b-2 border-blue-500 text-blue-600 font-semibold" : "text-gray-500 hover:text-gray-700"
       }`}
     >
       {children}
@@ -105,19 +108,19 @@ function Tab({ children, active, onClick }) {
 
 function StatCard({ title, value }) {
   return (
-    <div className="bg-white rounded-lg p-5 shadow-sm">
-      <p className="text-gray-500">{title}</p>
-      <h2 className="text-3xl font-bold">{value || 0}</h2>
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
+      <h2 className="text-3xl font-bold text-gray-800">{value || 0}</h2>
     </div>
   );
 }
 
 function SensorCard({ title, value, unit, color }) {
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
-      <p className="text-gray-500 mb-2">{title}</p>
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
+      <p className="text-gray-500 font-medium mb-2">{title}</p>
       <h2 className={`text-4xl font-bold ${color}`}>
-        {value || 0} {unit}
+        {value || 0} <span className="text-lg font-normal text-gray-400">{unit}</span>
       </h2>
     </div>
   );
@@ -125,20 +128,16 @@ function SensorCard({ title, value, unit, color }) {
 
 function TimeCard() {
   const [time, setTime] = useState(new Date());
-
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer); // Nhớ clear interval để tránh memory leak
+    return () => clearInterval(timer);
   }, []);
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
-      <h2 className="text-3xl font-bold">
-        {time.toLocaleTimeString()}
-      </h2>
-      <p>{time.toDateString()}</p>
-      <p>TP. Hồ Chí Minh</p>
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
+      <h2 className="text-3xl font-bold text-gray-800">{time.toLocaleTimeString()}</h2>
+      <p className="text-gray-500 text-sm mt-1">{time.toDateString()}</p>
+      <p className="text-blue-500 text-xs font-semibold uppercase mt-1">TP. Hồ Chí Minh</p>
     </div>
   );
 }
-

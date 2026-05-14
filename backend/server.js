@@ -78,8 +78,6 @@ const sensorRoutes = require('./routes/sensor.routes');
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
 
-const userRoutes = require("./routes/user.routes");
-const authRoutes = require('./routes/auth.routes');
 
 const logRoutes = require("./routes/log.routes");
 
@@ -89,6 +87,8 @@ const socketService = require("./services/socket.service");
 const mqttService = require("./services/mqtt.service");
 const dataService = require("./services/data.service");
 const automationService = require("./services/automation.service");
+
+const automationRoutes = require('./routes/automation.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -131,9 +131,10 @@ app.use("/api/user", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/devices", deviceRoutes);
-app.use('/api/sensors', require('./routes/sensor.routes'));
+app.use('/api/sensors', sensorRoutes);
 
 app.use('/api/logs', logRoutes);
+app.use('/api/automation', automationRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 sequelize.authenticate()
