@@ -49,150 +49,193 @@ Time-series data processing
 
 ### 📂 Cấu trúc thư mục
 project-root/
-BE
-|   Creat_DB_and_Table.sql
+C:.
+|   .env.example
+|   .gitignore
 |   package-lock.json
-|   package.json
-|   server.js
+|   README.md
 |   tree.txt
 |   
-+---config
-|       db.js
-|       mqtt.js
-|       socket.js
-|       
-+---controllers
-|       auth.controller.js
-|       automation.controller.js
-|       dashboard.controller.js
-|       device.controller.js
-|       log.controller.js
-|       schedule.controller.js
-|       sensor.controller.js
-|       
-+---middlewares
-|       auth.middleware.js
-|       
-+---models
-|       Alert.js
-|       Automation.js
-|       Device.js
-|       index.js
-|       Log.js
-|       Schedule.js
-|       Sensor.js
-|       SensorData.js
-|       User.js
-|       
-+---node_modules
-+---routes
-|       auth.routes.js
-|       automation.routes.js
-|       dashboard.routes.js
-|       device.routes.js
-|       log.routes.js
-|       schedule.routes.js
-|       sensor.routes.js
-|       
-+---services
-|       automation.service.js
-|       mqtt.service.js
-|       schedule.service.js
-|       socket.service.js
-|       
-+---utils
-|       jwt.js
-|       
-\---workers
-        automation.worker.js
-        schedule.worker.js
-FE
-|   .gitignore
-|   eslint.config.js
-|   index.html
-|   package-lock.json
-|   package.json
-|   postcss.config.js
-|   README.md
-|   tailwind.config.js
-|   tree.txt
-|   vite.config.js
-|
-+---public
-|       favicon.svg
-|       icons.svg
-|       
-\---src
-    |   App.css
-    |   App.jsx
-    |   index.css
-    |   main.jsx
-    |   
-    +---api
-    |       axios.js
-    |       dashboard.api.js
-    |       device.api.js
-    |       log.api.js
-    |       mock.js
-    |       
-    +---assets
-    |       arrow-right Copy.svg
-    |       cam-bien-anh-sang.png
-    |       cam-bien-nhiet-do-do-am-dht20.png
-    |       fan.png
-    |       hero.png
-    |       home-icon.svg
-    |       icon-mail.svg
-    |       icon-user.svg
-    |       info.svg
-    |       led.png
-    |       lock.svg
-    |       lock1.svg
-    |       logo brand bk.jpg
-    |       logo.svg
-    |       phone.svg
-    |       react.svg
-    |       vite.svg
-    |       
-    +---components
-    |   +---automation
-    |   |       AutomationRule.jsx
-    |   |       
-    |   +---cards
-    |   |       DeviceCard.jsx
-    |   |       DeviceControl.jsx
-    |   |       SensorCard.jsx
-    |   |       StatCard.jsx
-    |   |       
-    |   +---chart
-    |   |       RealtimeChart.jsx
-    |   |       
-    |   \---modal
-    |           DeviceModal.jsx
-    |           
-    +---hooks
-    |       useSocket.js
-    |       
-    +---layout
-    |       Sidebar.jsx
-    |       
-    +---pages
-    |   |   chart.jsx
-    |   |   Dashboard.jsx
-    |   |   Devices.jsx
-    |   |   Logs.jsx
-    |   |   Profile.jsx
-    |   |   
-    |   +---Login
-    |   |       Login.css
-    |   |       Login.jsx
-    |   |       
-    |   \---Sign up
-    |           Signup.css
-    |           Signup.jsx
-    |           
-    \---socket
-            socket.js
++---backend
+|   |   .env
+|   |   .gitignore
+|   |   Creat_DB_and_Table.sql
+|   |   package-lock.json
+|   |   package.json
+|   |   server.js
+|   |   tree.txt
+|   |   
+|   +---config
+|   |       db.js
+|   |       mqtt.js
+|   |       socket.js
+|   |       
+|   +---controllers
+|   |       auth.controller.js
+|   |       automation.controller.js
+|   |       dashboard.controller.js
+|   |       device.controller.js
+|   |       log.controller.js
+|   |       schedule.controller.js
+|   |       sensor.controller.js
+|   |       user.controller.js
+|   |       
+|   +---docs
+|   |       swagger.js
+|   |       
+|   +---middlewares
+|   |       auth.middleware.js
+|   |       uploadAvatar.middleware.js
+|   |       
+|   +---models
+|   |       Automation.js
+|   |       Device.js
+|   |       Home.js
+|   |       index.js
+|   |       Log.js
+|   |       Schedule.js
+|   |       Sensor.js
+|   |       SensorData.js
+|   |       User.js
+|   |           
+|   +---routes
+|   |       auth.routes.js
+|   |       automation.routes.js
+|   |       dashboard.routes.js
+|   |       device.routes.js
+|   |       log.routes.js
+|   |       schedule.routes.js
+|   |       sensor.routes.js
+|   |       user.routes.js
+|   |       
+|   +---services
+|   |       auth.service.js
+|   |       automation.service.js
+|   |       data.service.js
+|   |       mqtt.service.js
+|   |       schedule.service.js
+|   |       sensor.service.js
+|   |       socket.service.js
+|   |       
+|   +---strategies
+|   |       automation.strategy.js
+|   |       evaluator.strategy.js
+|   |       
+|   +---uploads
+|   |   \---avatar
+|   |           1776629588667.png
+|   |           1776629942401.jpg
+|   |           1776630842216.jpg
+|   |           1776630849359.png
+|   |           
+|   +---utils
+|   |       jwt.js
+|   |       
+|   \---workers
+|           automation.worker.js
+|           schedule.worker.js
++---frontend
+|   |   .gitignore
+|   |   eslint.config.js
+|   |   index.html
+|   |   package-lock.json
+|   |   package.json
+|   |   postcss.config.js
+|   |   README.md
+|   |   tailwind.config.js
+|   |   tree.txt
+|   |   vite.config.js
+|   |
+|   +---public
+|   |       favicon.svg
+|   |       icons.svg
+|   |       
+|   \---src
+|       |   App.css
+|       |   App.jsx
+|       |   index.css
+|       |   main.jsx
+|       |   
+|       +---api
+|       |       axios.js
+|       |       dashboard.api.js
+|       |       device.api.js
+|       |       log.api.js
+|       |       mock.js
+|       |       user.api.js
+|       |       
+|       +---assets
+|       |       arrow-right Copy.svg
+|       |       cam-bien-anh-sang.png
+|       |       cam-bien-nhiet-do-do-am-dht20.png
+|       |       fan.png
+|       |       hero.png
+|       |       home-icon.svg
+|       |       icon-mail.svg
+|       |       icon-user.svg
+|       |       info.svg
+|       |       led.png
+|       |       lock.svg
+|       |       lock1.svg
+|       |       logo brand bk.jpg
+|       |       logo.svg
+|       |       phone.svg
+|       |       react.svg
+|       |       UserThumb.png
+|       |       vite.svg
+|       |       
+|       +---components
+|       |   |   PasswordModal.jsx
+|       |   |   
+|       |   +---automation
+|       |   |       AutomationRule.jsx
+|       |   |       
+|       |   +---cards
+|       |   |       DeviceCard.jsx
+|       |   |       DeviceControl.jsx
+|       |   |       SensorCard.jsx
+|       |   |       StatCard.jsx
+|       |   |       
+|       |   +---chart
+|       |   |       ChartCard.jsx
+|       |   |       RealtimeChart.jsx
+|       |   |       
+|       |   \---modal
+|       |           AddDeviceModal.jsx
+|       |           AddSensorModal.jsx
+|       |           DeviceModal.jsx
+|       |           DeviceSettingModal.jsx
+|       |           RuleModal.jsx
+|       |           
+|       +---hooks
+|       |       useSocket.js
+|       |       
+|       +---layout
+|       |       Sidebar.jsx
+|       |       
+|       +---pages
+|       |   |   chart.jsx
+|       |   |   Dashboard.jsx
+|       |   |   Devices.jsx
+|       |   |   Logs.jsx
+|       |   |   Profile.jsx
+|       |   |   
+|       |   +---Login
+|       |   |       Login.css
+|       |   |       Login.jsx
+|       |   |       
+|       |   \---Sign up
+|       |           Signup.css
+|       |           Signup.jsx
+|       |           
+|       \---socket
+|               socket.js
+|               
+\---iot
+        devices.py
+        main.py
+        mqtt_client.py
+        sensors.py
                
 
 ### 🔌 APIs END POINT

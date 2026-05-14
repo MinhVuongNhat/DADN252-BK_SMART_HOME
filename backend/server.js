@@ -7,6 +7,7 @@ const { Server } = require("socket.io");
 
 const sequelize = require("./config/db");
 const dashboardRoutes = require("./routes/dashboard.routes");
+<<<<<<< Updated upstream
 const socketService = require("./services/socket.service");
 
 const userRoutes = require("./routes/user.routes");
@@ -18,6 +19,17 @@ const swaggerSpec = require("./docs/swagger");
 const userRoutes = require("./routes/user.routes");
 const authRoutes = require('./routes/auth.routes');
 
+=======
+const deviceRoutes = require("./routes/device.routes");
+const userRoutes = require("./routes/user.routes");
+const authRoutes = require('./routes/auth.routes');
+const sensorRoutes = require('./routes/sensor.routes');
+const logRoutes = require("./routes/log.routes");
+// --- SWAGGER ---
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./docs/swagger");
+
+>>>>>>> Stashed changes
 require("./services/mqtt.service");
 
 const app = express();

@@ -10,10 +10,18 @@ import AddSensorModal from "../components/modal/AddSensorModal";
 import RuleModal from "../components/modal/RuleModal";
 // import các mock để demo
 import { mockDevices, mockSensors, mockRules, mockConditions, mockActions } from "../api/mock";
+import { 
+  getDevices, 
+  createDevice, 
+  updateDevice, 
+  deleteDevice, 
+  toggleDevice 
+} from "../api/device.api";
 
 export default function Devices() {
   const [tab, setTab] = useState("device");
   const [devices, setDevices] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [sensors, setSensors] = useState([]);
   const [rules, setRules] = useState([]);
 
@@ -26,63 +34,84 @@ export default function Devices() {
   const [openRuleModal, setOpenRuleModal] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
 
-//  useEffect(() => {
-//    fetchData();
-//  }, []);
+  // Fetch dữ liệu thiết bị thực tế cho Device
+  const fetchDevices = async () => {
+    try {
+      setLoading(true);
+      const response = await getDevices();
+      
+      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      setDevices(data);
+    } catch (error) {
+      console.error("Lỗi khi load thiết bị:", error);
+      setDevices([]); // Đảm bảo luôn là mảng nếu lỗi
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dữ liệu mock cho Sensor và Rules
   useEffect(() => {
-    setDevices(mockDevices);
-    setSensors(mockSensors);
-
-    const mergedRules = mockRules.map((rule) => {
-      const conditions = mockConditions.filter(
-        (c) => c.rule_id === rule.rule_id
-      );
-
-      const actions = mockActions.filter(
-        (a) => a.rule_id === rule.rule_id
-      );
-
-      return {
-        ...rule,
-        conditions,
-        actions,
-      };
-    });
-
+    fetchDevices();
+    setSensors(mockSensors); // Dùng tạm mock cho sensor
+    // Logic gộp rules từ mock
+    const mergedRules = mockRules.map((rule) => ({
+      ...rule,
+      conditions: mockConditions.filter((c) => c.rule_id === rule.rule_id),
+      actions: mockActions.filter((a) => a.rule_id === rule.rule_id),
+    }));
     setRules(mergedRules);
   }, []);
 
-//  const fetchData = async () => {
-//    const d = await axios.get("/devices");
-//    const s = await axios.get("/sensors");
-//    const r = await axios.get("/automation");
-
-//    setDevices(d.data);
-//    setSensors(s.data);
-//    setRules(r.data);
-//  };
-
   // ===== HANDLERS =====
   // ===== Device =====
-  const handleToggle = (id, type) => {
-      setDevices((prev) =>
-        prev.map((d) => {
-          if (d.device_id === id) {
-            if (type === "power") {
-              return { ...d, power_status: d.power_status === "on" ? "off" : "on" };
-            } else {
-              return { ...d, control_mode: d.control_mode === "automation" ? "manual" : "automation" };
-            }
-          }
-          return d;
-        })
-      );
-    };
-
-  const handleDeleteDevice = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?")) {
-      setDevices((prev) => prev.filter((d) => d.device_id !== id));
+  const handleAddDevice = async (newDeviceForm) => {
+    try {
+      await createDevice(newDeviceForm);
+      await fetchDevices(); // Reload lại danh sách sau khi thêm
+      setOpenAddDevice(false);
+    } catch (error) {
+      alert("Không thể thêm thiết bị. Vui lòng kiểm tra lại backend!");
     }
+  };
+
+  // 3. Xử lý Cập nhật thiết bị (Dùng cho DeviceSettingModal)
+  const handleSaveSetting = async (updatedDevice) => {
+    try {
+      await updateDevice(updatedDevice.device_id, updatedDevice);
+      await fetchDevices(); // Reload để UI đồng bộ với DB
+      setOpenDeviceSetting(false);
+      setSelectedDevice(null);
+    } catch (error) {
+      alert("Cập nhật thất bại!");
+    }
+  };
+
+  // 4. Xử lý Xóa thiết bị
+  const handleDeleteDevice = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa thiết bị này? Dữ liệu liên quan sẽ bị mất.")) {
+      try {
+        await deleteDevice(id);
+        await fetchDevices(); // Cập nhật lại danh sách sau khi xóa
+      } catch (error) {
+        alert("Xóa thiết bị thất bại!");
+      }
+    }
+  };
+
+  // 5. Xử lý Bật/Tắt nhanh tại Card
+  const handleToggle = async (id) => {
+    try {
+      await toggleDevice(id);
+      await fetchDevices(); // Cập nhật trạng thái mới nhất từ Server
+    } catch (error) {
+      console.error("Lỗi toggle:", error);
+    }
+  };
+
+  const handleOpenSetting = (device) => {
+    setSelectedDevice(device);
+    setOpenDeviceSetting(true);
   };
 
   const handleRename = (id, name) => {
@@ -92,21 +121,6 @@ export default function Devices() {
       )
     );
   };
-
-  const handleOpenSetting = (device) => {
-      setSelectedDevice(device);
-      setOpenDeviceSetting(true);
-    };
-
-    const handleSaveSetting = (updatedDevice) => {
-      setDevices((prev) =>
-        prev.map((d) => (d.device_id === updatedDevice.device_id ? updatedDevice : d))
-      );
-    };
-
-    const handleAddDevice = (newDevice) => {
-      setDevices((prev) => [...prev, newDevice]);
-    };
 
   // ===== Sensor =====
   const handleSensorDelete = (id) => {
@@ -156,7 +170,6 @@ export default function Devices() {
       }
     };
 
-  // ===
   // ===== COUNT =====
   const totalDevices = devices.length;
   const totalFans = devices.filter((d) => d.type === "fan").length;
