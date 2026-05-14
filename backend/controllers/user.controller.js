@@ -63,7 +63,7 @@ exports.updateProfile = async (req, res) => {
     user.phone = phone || user.phone;
     user.updated_at = new Date();
 
-    await user.save(); // Nếu trùng email, nó sẽ nhảy xuống catch(err) ở đây
+    await user.save(); 
 
     if (home_name && user.home_id) {
       await Home.update({ home_name }, { where: { home_id: user.home_id } });
@@ -71,7 +71,7 @@ exports.updateProfile = async (req, res) => {
 
     res.json({ message: "Profile updated successfully" });
   } catch (err) {
-    console.error("Database Update Error:", err); // Xem lỗi ở Terminal Backend
+    console.error("Database Update Error:", err); 
     res.status(500).json({ error: err.message });
   }
 };

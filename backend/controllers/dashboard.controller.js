@@ -5,7 +5,7 @@ const { Device, Sensor } = require("../models");
 // 1. Lấy tổng số thiết bị, cảm biến CỦA USER ĐANG ĐĂNG NHẬP
 exports.getSummary = async (req, res) => {
   try {
-    // Giả sử authMiddleware của bà lưu thông tin vào req.user.user_id
+  
     const userId = req.user.user_id; 
 
     const totalDevices = await Device.count({ where: { user_id: userId } });

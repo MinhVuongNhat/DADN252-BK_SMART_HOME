@@ -2,7 +2,7 @@ const Device = require("../models/Device");
 const { Sensor, SensorData, LatestSensorValue } = require("../models/Sensor");
 
 class DataService {
-  // Cài đặt interface của Observer
+
   async update(topic, message) {
     try {
       const parts = topic.split("/");
@@ -34,14 +34,13 @@ class DataService {
       const sensor = await Sensor.findOne({ where: { mqtt_topic: feedKey } });
       if (!sensor) return;
 
-      // Lưu lịch sử
+   
       await SensorData.create({
         sensor_id: sensor.sensor_id,
         value: numericValue,
         recorded_at: new Date(),
       });
 
-      // Cập nhật giá trị mới nhất
       await LatestSensorValue.upsert({
         sensor_id: sensor.sensor_id,
         current_value: numericValue,
@@ -71,7 +70,7 @@ class DataService {
           connection_status: "online",
           last_seen: new Date(),
         },
-        { where: { device_id: deviceId } } // LƯU Ý: Sửa 'id' thành tên khóa chính thực tế của bảng Device (VD: device_id)
+        { where: { device_id: deviceId } } 
       );
 
       console.log(`💾 DataService: Cập nhật trạng thái Device [${deviceId}]`);

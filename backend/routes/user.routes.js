@@ -12,12 +12,7 @@ const {
   changePassword
 } = require("../controllers/user.controller");
 
-/**
- * LƯU Ý: 
- * Nếu file auth.middleware.js của bạn export theo kiểu: module.exports = { verifyToken: ... }
- * Thì ở đây bạn phải sửa thành: const { verifyToken } = require("../middlewares/auth.middleware");
- * Và thay authMiddleware bên dưới thành verifyToken.
- */
+
 
 // GET PROFILE - Lấy thông tin cá nhân
 router.get("/profile", authMiddleware, getProfile);
@@ -29,7 +24,7 @@ router.put("/profile", authMiddleware, updateProfile);
 router.post(
   "/avatar",
   authMiddleware,
-  uploadAvatar.single("avatar"), // "avatar" phải khớp với name trong FormData ở Frontend
+  uploadAvatar.single("avatar"), 
   updateAvatar
 );
 

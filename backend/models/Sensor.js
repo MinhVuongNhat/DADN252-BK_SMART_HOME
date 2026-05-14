@@ -72,6 +72,7 @@ const SensorData = sequelize.define(
   },
   {
     tableName: "sensor_data",
+    hasTrigger: true,
     timestamps: false,
   }
 );

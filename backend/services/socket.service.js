@@ -16,39 +16,31 @@ class SocketService {
     });
   }
 
-  update(topic, message) {
+update(topic, message) {
     if (!this.io) return;
 
+
     const feedKey = topic.split('/').pop(); 
-    
-    // 1. Nếu là dữ liệu Sensor -> Cập nhật biểu đồ/Card
-    if (["nhietdo", "doam", "anhsang"].includes(feedKey)) {
-      this.io.emit("sensor_update", {
-        feed: feedKey,
-        value: parseFloat(message),
-        timestamp: new Date()
-      });
-    }
+    console.log(`📡 SocketService nhận: [${feedKey}] = ${message}`);
 
-    // 2. [LOGIC BỊ THIẾU] Nếu thiết bị đổi trạng thái -> Cập nhật nút Bật/Tắt trên Web
-    if (feedKey.startsWith("device-") && feedKey.endsWith("-status")) {
-      const match = feedKey.match(/device-(\d+)-status/);
-      if (match) {
-        const deviceId = match[1];
-        let statusValue = message;
-        try { 
-          const parsed = JSON.parse(message); 
-          statusValue = parsed.power_status || parsed.status || message;
-        } catch(e) {}
-
-        this.io.emit("device-update", {
-          id: deviceId,
-          power_status: statusValue,
-          connection_status: "online"
+    const sensorFeeds = ["nhietdo", "doam", "anhsang"];
+    if (sensorFeeds.includes(feedKey)) {
+        this.io.emit("sensor_update", {
+            feed: feedKey,
+            value: parseFloat(message) || 0, 
+            timestamp: new Date()
         });
-      }
     }
-  }
+
+    if (feedKey.includes("-status")) {
+        const deviceId = feedKey.split('-')[1]; 
+        this.io.emit("device_update", { 
+            id: deviceId,
+            power_status: message, 
+            connection_status: "online"
+        });
+    }
+}
 }
 
 module.exports = new SocketService();

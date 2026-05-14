@@ -1,49 +1,49 @@
-﻿USE master;
+﻿-- ======================================================================
+-- 0. DỌN DẸP TẬN GỐC (RESET HỆ THỐNG)
+-- ======================================================================
+USE master;
 GO
 
--- Kiểm tra nếu database tồn tại thì xóa đi để tạo mới
+-- Bước quan trọng nhất: Ngắt toàn bộ kết nối và xóa Database
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'smarthome')
 BEGIN
+    -- Ép về Single User và ngắt mọi kết nối ngay lập tức
     ALTER DATABASE smarthome SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE smarthome;
+    PRINT N'1. Đã xóa Database smarthome thành công.';
 END
 GO
 
--- Tạo lại database mới
+-- Xóa Login ở tầng Server (nguyên nhân gây lỗi sManager already exists)
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'sManager')
+BEGIN
+    DROP LOGIN [sManager];
+    PRINT N'2. Đã xóa Login sManager thành công.';
+END
+GO
+
+-- ======================================================================
+-- 1. TẠO MỚI DATABASE VÀ CẤP QUYỀN
+-- ======================================================================
 CREATE DATABASE smarthome;
 GO
 
 USE smarthome;
 GO
 
--- Xóa database user nếu tồn tại
-IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'sManager')
-BEGIN
-    DROP USER [sManager];
-END
-GO
-
+-- Tạo lại Login và User cho sManager
 USE master;
 GO
-
--- Xóa login nếu tồn tại
-IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'sManager')
-BEGIN
-    DROP LOGIN [sManager];
-END
-GO
-
--- Tạo login mới
 CREATE LOGIN [sManager] WITH PASSWORD = N'Nhom6251';
 GO
 
 USE smarthome;
 GO
-
 CREATE USER [sManager] FOR LOGIN [sManager];
 ALTER ROLE db_owner ADD MEMBER [sManager];
+PRINT N'3. Đã tạo mới Login và User sManager.';
 GO
-
+-- Sau đó mới đến đống CREATE TABLE ...
 -- ======================================================================
 -- TẠO BẢNG
 -- ======================================================================
@@ -299,8 +299,8 @@ VALUES
 (1, 'user1', '$2b$10$/8JHqswWX2VJdDbQa.kXyOUtm1oEu9AQmXmpMW.k3q3jVO2tyVInW', 'user1@smarthome.com', '0900000001', 'user');
 INSERT INTO devices (user_id, name, type, location, mqtt_topic_pub, mqtt_topic_sub, connection_status, power_status, control_mode)
 VALUES
-(1, N'Đèn phòng khách', 'light', N'Phòng khách', 'home/light1/set', 'home/light1/status', 'online', 'off', 'manual'),
-(1, N'Quạt phòng ngủ', 'fan', N'Phòng ngủ', 'home/fan1/set', 'home/fan1/status', 'online', 'on', 'automation');
+(1, N'Đèn phòng khách', 'light', N'Phòng khách', 'den', 'den', 'online', 'off', 'automation'),
+(1, N'Quạt phòng ngủ', 'fan', N'Phòng ngủ', 'quat','quat', 'online', 'on', 'automation');
 
 INSERT INTO sensors (user_id, name, type, unit, mqtt_topic)
 VALUES

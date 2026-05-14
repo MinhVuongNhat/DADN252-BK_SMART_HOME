@@ -14,8 +14,7 @@ module.exports = (req, res, next) => {
     // Kiểm tra kĩ SECRET_KEY
     const SECRET = process.env.JWT_SECRET || "secret_key_nhom_6";
     const decoded = jwt.verify(token, SECRET);
-    console.log("--- DEBUG MIDDLEWARE ---");
-    console.log("Decoded Token:", decoded);
+
 
     req.user = decoded;
 
