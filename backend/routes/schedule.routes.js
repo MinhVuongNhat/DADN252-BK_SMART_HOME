@@ -9,7 +9,7 @@ const {
   createSchedule,
   updateSchedule,
   deleteSchedule,
-  updateScheduleActive,
+  toggleSchedule,
 } = require("../controllers/schedule.controller");
 
 /**
@@ -80,7 +80,7 @@ router.get("/devices/:id/schedules", authMiddleware, getSchedulesByDevice);
  *       201:
  *         description: Schedule created successfully
  */
-router.post("/", authMiddleware, createSchedule);
+router.post("/", createSchedule);
 
 /**
  * @swagger
@@ -122,7 +122,7 @@ router.post("/", authMiddleware, createSchedule);
  *       200:
  *         description: Schedule updated successfully
  */
-router.put("/:id", authMiddleware, updateSchedule);
+router.put("/:id", updateSchedule);
 
 /**
  * @swagger
@@ -141,7 +141,7 @@ router.put("/:id", authMiddleware, updateSchedule);
  *       200:
  *         description: Schedule deleted successfully
  */
-router.delete("/:id", authMiddleware, deleteSchedule);
+router.delete("/:id", deleteSchedule);
 
 /**
  * @swagger
@@ -172,6 +172,6 @@ router.delete("/:id", authMiddleware, deleteSchedule);
  *       200:
  *         description: Schedule active state updated successfully
  */
-router.patch("/:id/active", authMiddleware, updateScheduleActive);
+router.patch("/:id/active", authMiddleware, toggleSchedule);
 
 module.exports = router;

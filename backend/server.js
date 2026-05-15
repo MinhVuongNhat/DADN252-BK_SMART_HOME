@@ -73,6 +73,7 @@ const deviceRoutes = require("./routes/device.routes");
 const userRoutes = require("./routes/user.routes");
 const authRoutes = require('./routes/auth.routes');
 const sensorRoutes = require('./routes/sensor.routes');
+const scheduleRoutes = require('./routes/schedule.routes');
 
 // --- SWAGGER ---
 const swaggerUi = require("swagger-ui-express");
@@ -132,6 +133,7 @@ app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/devices", deviceRoutes);
 app.use('/api/sensors', sensorRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 app.use('/api/logs', logRoutes);
 app.use('/api/automation', automationRoutes);

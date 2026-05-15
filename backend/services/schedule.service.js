@@ -1,103 +1,92 @@
 const db = require("../config/db");
+const { QueryTypes } = require("sequelize");
 
-/**
- * Chuẩn hoá time "HH:mm" -> "HH:mm:ss"
- */
 function normalizeTime(t) {
   if (!t) return null;
   if (t.length === 5) return `${t}:00`;
   return t;
 }
 
-/**
- * Validate business rules
- */
-function validateScheduleInput(data) {
-  const { start_time, end_time } = data;
-  if (!start_time || !end_time) throw new Error("Giờ bắt đầu và kết thúc là bắt buộc");
-
-  const s = normalizeTime(start_time);
-  const e = normalizeTime(end_time);
-
-  if (s >= e) {
-    throw new Error("Giờ bắt đầu phải nhỏ hơn giờ kết thúc");
-  }
-  return { sTime: s, eTime: e };
-}
-
-/**
- * UPSERT: Tự động cập nhật hoặc tạo mới lịch trình cho 1 thiết bị
- * Dùng cho trường hợp lưu từ Modal thiết bị
- */
-exports.upsertDeviceSchedule = async (deviceId, data) => {
-  const { sTime, eTime } = validateScheduleInput(data);
-  const { name, action_type, target_value } = data;
-
-  // Kiểm tra xem thiết bị đã có schedule chưa
-  const existing = await db.query`
-    SELECT schedule_id FROM schedules WHERE device_id = ${deviceId}
-  `;
-
-  if (existing.recordset.length > 0) {
-    // UPDATE
-    const id = existing.recordset[0].schedule_id;
-    return await this.updateSchedule(id, {
-      start_time: sTime,
-      end_time: eTime,
-      name: name || "Lịch trình mặc định",
-      is_active: 1
-    });
-  } else {
-    // CREATE NEW
-    const result = await db.query`
-      INSERT INTO schedules (device_id, name, action_type, start_time, end_time, is_active)
-      OUTPUT INSERTED.*
-      VALUES (${deviceId}, ${name || 'Lịch trình'}, ${action_type || 'toggle'}, ${sTime}, ${eTime}, 1)
-    `;
-    return result.recordset[0];
-  }
-};
-
-/**
- * GET by device
- */
+// Lấy lịch trình theo DeviceID
 exports.getSchedulesByDevice = async (deviceId) => {
-  const result = await db.query`
-    SELECT * FROM schedules WHERE device_id = ${deviceId}
-  `;
-  return result.recordset;
+  const result = await db.query(
+    "SELECT * FROM schedules WHERE device_id = :deviceId",
+    {
+      replacements: { deviceId },
+      type: QueryTypes.SELECT
+    }
+  );
+  return result;
 };
 
-/**
- * UPDATE (Đã tối ưu lại query)
- */
-exports.updateSchedule = async (id, data) => {
-  // Lấy dữ liệu cũ để tránh mất data khi update partial
-  const sTime = data.start_time ? normalizeTime(data.start_time) : undefined;
-  const eTime = data.end_time ? normalizeTime(data.end_time) : undefined;
+// Hàm tạo mới (để tránh lỗi is not a function)
+exports.createSchedule = async (data) => {
+  const { device_id, name, start_time, end_time, action_type } = data;
 
-  const result = await db.query`
-    UPDATE schedules
-    SET 
-      name = ISNULL(${data.name}, name),
-      start_time = ISNULL(${sTime}, start_time),
-      end_time = ISNULL(${eTime}, end_time),
-      is_active = ISNULL(${data.is_active}, is_active)
+  const deviceIdNum = Number(device_id);
+  if (isNaN(deviceIdNum)) {
+    throw new Error("device_id không hợp lệ");
+  }
+
+  const sTime = normalizeTime(start_time);
+  const eTime = normalizeTime(end_time);
+
+  const result = await db.query(
+    `
+    INSERT INTO schedules (device_id, name, action_type, start_time, end_time, is_active)
     OUTPUT INSERTED.*
-    WHERE schedule_id = ${id}
-  `;
+    VALUES (:device_id, :name, :action_type, :start_time, :end_time, 1)
+    `,
+    {
+      replacements: {
+        device_id: deviceIdNum,
+        name: name || 'Lịch trình',
+        action_type: action_type || 'turn_on',
+        start_time: sTime,
+        end_time: eTime
+      }
+    }
+  );
 
-  if (result.recordset.length === 0) throw new Error("Không tìm thấy lịch trình");
-  return result.recordset[0];
+  return result[0][0];
 };
 
-/**
- * DELETE
- */
+// Hàm cập nhật hoặc tạo mới (UPSERT)
+exports.upsertSchedule = async (deviceId, data) => {
+  const existing = await db.query(
+    "SELECT schedule_id FROM schedules WHERE device_id = :deviceId",
+    {
+      replacements: { deviceId },
+      type: QueryTypes.SELECT
+    }
+  );
+};
+
+// Hàm Bật/Tắt (Toggle) is_active
+exports.toggleSchedule = async (deviceId, is_active) => {
+  const result = await db.query(
+    `
+    UPDATE schedules 
+    SET is_active = :is_active
+    OUTPUT INSERTED.*
+    WHERE device_id = :deviceId
+    `,
+    {
+      replacements: {
+        deviceId,
+        is_active: is_active ? 1 : 0
+      },
+      type: QueryTypes.UPDATE
+    }
+  );
+};
+
 exports.deleteSchedule = async (id) => {
-  const result = await db.query`
-    DELETE FROM schedules OUTPUT DELETED.* WHERE schedule_id = ${id}
-  `;
-  if (result.recordset.length === 0) throw new Error("Không tìm thấy lịch trình");
-  return true;
+  await db.query(
+    "DELETE FROM schedules WHERE schedule_id = :id",
+    {
+      replacements: { id },
+      type: QueryTypes.DELETE
+    }
+  );
 };
