@@ -55,6 +55,7 @@ class MQTTService {
     }
   }
 
+<<<<<<< Updated upstream
   // Subscribe to device topics from database
   static subscribeToTopics() {
     try {
@@ -68,6 +69,13 @@ class MQTTService {
       console.error("❌ Subscribe Topics Error:", error);
     }
   }
+=======
+  publish(topic, command) {
+    if (this.client && this.client.connected) {
+      // Chuẩn hóa payload: Gửi 1 cho ON và 0 cho OFF để khớp với Dashboard Adafruit và thiết bị
+      const payload =
+        command === "ON" || command === "on" || command === "1" ? "1" : "0";
+>>>>>>> Stashed changes
 
   // Publish device control command
   static async publishDeviceCommand(deviceId, command, options = {}) {

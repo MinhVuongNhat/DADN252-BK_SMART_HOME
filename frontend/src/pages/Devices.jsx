@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import axios from "../api/axios";
+<<<<<<< Updated upstream
 import DeviceModal from "../components/modal/DeviceModal";
+=======
+import socket from "../socket/socket";
+>>>>>>> Stashed changes
 import DeviceCard from "../components/cards/DeviceCard";
 import SensorCard from "../components/cards/SensorCard";
 import AddDeviceModal from "../components/modal/AddDeviceModal";
@@ -52,6 +56,7 @@ export default function Devices() {
 
   // Dữ liệu mock cho Sensor và Rules
   useEffect(() => {
+<<<<<<< Updated upstream
     fetchDevices();
     setSensors(mockSensors); // Dùng tạm mock cho sensor
     // Logic gộp rules từ mock
@@ -61,6 +66,20 @@ export default function Devices() {
       actions: mockActions.filter((a) => a.rule_id === rule.rule_id),
     }));
     setRules(mergedRules);
+=======
+    fetchData();
+
+    // Lắng nghe sự kiện cập nhật thiết bị để làm mới dữ liệu
+    const handleUpdate = () => {
+      console.log("🔄 Phát hiện thay đổi thiết bị, đang cập nhật...");
+      fetchData();
+    };
+
+    socket.on("device_update", handleUpdate);
+    return () => {
+      socket.off("device_update", handleUpdate);
+    };
+>>>>>>> Stashed changes
   }, []);
 
   // ===== HANDLERS =====
@@ -122,13 +141,36 @@ export default function Devices() {
     );
   };
 
+<<<<<<< Updated upstream
   // ===== Sensor =====
   const handleSensorDelete = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa cảm biến này?")) {
-      setSensors((prev) => prev.filter((s) => (s.sensor_id || s.id) !== id));
+=======
+  const handleAddDevice = async (newDevice) => {
+    try {
+      await axios.post("/devices", newDevice);
+      // Gọi lại API sau khi thêm thành công để đảm bảo lấy list mới nhất
+      await fetchData();
+      setOpenAddDevice(false);
+    } catch (error) {
+      console.error("Lỗi thêm thiết bị:", error);
+      alert("Không thể thêm thiết bị! Vui lòng xem log backend.");
     }
   };
 
+  // ===== HANDLERS SENSOR =====
+  const handleSensorDelete = async (id) => {
+>>>>>>> Stashed changes
+    if (window.confirm("Bạn có chắc chắn muốn xóa cảm biến này?")) {
+      try {
+        await axios.delete(`/sensors/${id}`);
+        await fetchData();
+      } catch (error) {
+        console.error("Lỗi xóa cảm biến:", error);
+      }
+    }
+  };
+
+<<<<<<< Updated upstream
   const handleSensorToggle = (id) => {
     setSensors((prev) =>
       prev.map((s) =>
@@ -137,10 +179,30 @@ export default function Devices() {
           : s
       )
     );
+=======
+  const handleSensorToggle = async (id) => {
+    try {
+      // Tìm sensor hiện tại để lấy status
+      const sensor = sensors.find(s => s.sensor_id === id);
+      const newStatus = sensor.status === "active" ? "inactive" : "active";
+      
+      await axios.patch(`/sensors/${id}`, { status: newStatus });
+      await fetchData();
+    } catch (error) {
+      console.error("Lỗi cập nhật trạng thái cảm biến:", error);
+    }
+>>>>>>> Stashed changes
   };
 
-  const handleAddSensor = (newSensor) => {
-    setSensors((prev) => [...prev, newSensor]);
+  const handleAddSensor = async (newSensor) => {
+    try {
+      await axios.post("/sensors", newSensor);
+      await fetchData();
+      setOpenAddSensor(false);
+    } catch (error) {
+      console.error("Lỗi thêm cảm biến:", error);
+      alert("Không thể thêm cảm biến!");
+    }
   };
 
   // ===== Auto Rule =====

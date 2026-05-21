@@ -1,4 +1,9 @@
 const db = require("../config/db");
+<<<<<<< Updated upstream
+=======
+const logController = require("./log.controller");
+const client = require("../services/mqtt.service");
+>>>>>>> Stashed changes
 
 exports.getDevices = async (req, res) => {
   try {
@@ -107,6 +112,7 @@ exports.createDevice = async (req, res) => {
 exports.updateDevice = async (req, res) => {
   try {
     const { id } = req.params;
+<<<<<<< Updated upstream
     const {
       name,
       power_status,
@@ -130,6 +136,173 @@ exports.updateDevice = async (req, res) => {
     res.status(500).json({
       success: false,
       message: err.message
+=======
+
+    // =========================
+    // 1. Lấy dữ liệu request
+    // =========================
+    const {
+      name = "Thiết bị",
+      power_status = "off",
+      control_mode = "manual",
+      start_time,
+      end_time,
+    } = req.body;
+
+    // =========================
+    // 2. Update device
+    // =========================
+    await db.query(
+      `
+      UPDATE devices
+      SET 
+        name = :name,
+        power_status = :power_status,
+        control_mode = :control_mode
+      WHERE device_id = :id
+      `,
+      {
+        replacements: {
+          id,
+          name,
+          power_status,
+          control_mode,
+        },
+      }
+    );
+
+    // =========================
+    // 3. Update schedule nếu cần
+    // =========================
+    if (
+      control_mode === "schedule" &&
+      start_time &&
+      end_time
+    ) {
+      await db.query(
+        `
+        IF EXISTS (
+          SELECT 1 
+          FROM schedules 
+          WHERE device_id = :id
+        )
+        BEGIN
+          UPDATE schedules
+          SET
+            start_time = :start_time,
+            end_time = :end_time,
+            is_active = 1
+          WHERE device_id = :id
+        END
+        ELSE
+        BEGIN
+          INSERT INTO schedules (
+            device_id,
+            start_time,
+            end_time,
+            is_active
+          )
+          VALUES (
+            :id,
+            :start_time,
+            :end_time,
+            1
+          )
+        END
+        `,
+        {
+          replacements: {
+            id,
+            start_time,
+            end_time,
+          },
+        }
+      );
+    }
+
+    // =========================
+    // 4. Lấy MQTT topic
+    // =========================
+    const [rows] = await db.query(
+      `
+      SELECT 
+        mqtt_topic_pub,
+        mqtt_topic_sub
+      FROM devices
+      WHERE device_id = :id
+      `,
+      {
+        replacements: { id },
+      }
+    );
+
+    const device = rows[0];
+
+    if (!device) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy thiết bị",
+      });
+    }
+
+    // =========================
+    // 5. Publish MQTT
+    // =========================
+    if (power_status) {
+      // Ưu tiên publish topic PUB
+      const feed =
+        device.mqtt_topic_pub ||
+        device.mqtt_topic_sub;
+
+      if (!feed) {
+        throw new Error(
+          "Thiết bị chưa cấu hình MQTT topic"
+        );
+      }
+
+      const topic =
+        `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${feed}`;
+
+      const payload =
+        power_status === "on" ? "1" : "0";
+
+      console.log(`
+📤 MQTT Publish (from updateDevice)
+Topic: ${topic}
+Payload: ${payload}
+`);
+
+      client.publish(topic, payload);
+    }
+
+    // =========================
+    // 6. Ghi log
+    // =========================
+    await logController.internalCreateLog({
+      userId: 1,
+      deviceId: id,
+      actionType: "UPDATE_DEVICE",
+      description:
+        `Cập nhật thiết bị ${name}: ` +
+        `Trạng thái ${power_status}, ` +
+        `Chế độ ${control_mode}`,
+    });
+
+    // =========================
+    // 7. Response
+    // =========================
+    return res.json({
+      success: true,
+      message: "Cập nhật thành công",
+    });
+
+  } catch (err) {
+    console.error("❌ updateDevice ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+>>>>>>> Stashed changes
     });
   }
 };
@@ -157,6 +330,7 @@ exports.deleteDevice = async (req, res) => {
 
 exports.toggleDevice = async (req, res) => {
   try {
+<<<<<<< Updated upstream
     const { id } = req.params;
     const { type, mode } = req.body;
 
@@ -185,10 +359,77 @@ exports.toggleDevice = async (req, res) => {
       message: "Toggle thành công"
     });
   } catch (err) {
+=======
+
+    const { id } = req.params;
+
+    // 1. Đảo trạng thái DB
+    await db.query(`
+      UPDATE devices
+      SET power_status =
+        CASE
+          WHEN power_status = 'on' THEN 'off'
+          ELSE 'on'
+        END
+      WHERE device_id = ${id}
+    `);
+
+    // 2. Lấy thông tin device
+    const result = await db.query(`
+      SELECT *
+      FROM devices
+      WHERE device_id = ${id}
+    `);
+
+    const device = result.recordset?.[0] || result[0];
+
+    if (!device) {
+        throw new Error("Không tìm thấy thiết bị để điều khiển");
+    }
+
+    // 3. MQTT topic
+    const topic =
+      `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${device.mqtt_topic_sub || device.mqtt_topic_pub}`;
+
+    // 4. Payload
+    const payload =
+      device.power_status === "on"
+        ? "1"
+        : "0";
+
+    // 5. Publish
+    client.publish(topic, payload);
+
+    console.log(`
+📤 MQTT Publish
+Topic: ${topic}
+Payload: ${payload}
+`);
+
+    // 6. Log
+    await logController.internalCreateLog({
+      userId: 1,
+      deviceId: id,
+      actionType: "TOGGLE_DEVICE",
+      description: `Toggle ${device.name}`
+    });
+
+    res.json({
+      success: true,
+      message: "Điều khiển thiết bị thành công"
+    });
+
+  } catch (err) {
+
+>>>>>>> Stashed changes
     res.status(500).json({
       success: false,
       message: err.message
     });
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   }
 };
 
@@ -218,14 +459,50 @@ exports.updateDeviceMode = async (req, res) => {
 
 exports.updateDevicePower = async (req, res) => {
   try {
+
     const { id } = req.params;
     const { power_status } = req.body;
 
+    // Update DB
     await db.query(`
       UPDATE devices
       SET power_status = '${power_status}'
       WHERE device_id = ${id}
     `);
+
+    // Get topic
+    const result = await db.query(`
+      SELECT mqtt_topic_sub, mqtt_topic_pub
+      FROM devices
+      WHERE device_id = ${id}
+    `);
+
+    const device = result.recordset?.[0] || result[0];
+
+    if (!device) {
+        throw new Error("Không tìm thấy thiết bị để cập nhật nguồn");
+    }
+
+    const topicName = device.mqtt_topic_sub || device.mqtt_topic_pub;
+
+    // Full topic
+    const topic =
+`${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${topicName}`;
+
+    // Payload
+    const payload =
+      power_status === 'on'
+        ? '1'
+        : '0';
+
+    // Publish
+    client.publish(topic, payload);
+
+    console.log(`
+📤 MQTT Publish
+Topic: ${topic}
+Payload: ${payload}
+`);
 
     res.json({
       success: true,
@@ -233,9 +510,11 @@ exports.updateDevicePower = async (req, res) => {
     });
 
   } catch (err) {
+
     res.status(500).json({
       success: false,
       message: err.message
     });
+
   }
 };
