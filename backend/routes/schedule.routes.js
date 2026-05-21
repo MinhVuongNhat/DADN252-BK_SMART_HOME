@@ -80,7 +80,7 @@ router.get("/devices/:id/schedules", authMiddleware, getSchedulesByDevice);
  *       201:
  *         description: Schedule created successfully
  */
-router.post("/", createSchedule);
+router.post("/", authMiddleware, createSchedule);
 
 /**
  * @swagger
@@ -122,7 +122,7 @@ router.post("/", createSchedule);
  *       200:
  *         description: Schedule updated successfully
  */
-router.put("/:id", updateSchedule);
+router.put("/:id", authMiddleware, updateSchedule);
 
 /**
  * @swagger
@@ -141,7 +141,7 @@ router.put("/:id", updateSchedule);
  *       200:
  *         description: Schedule deleted successfully
  */
-router.delete("/:id", deleteSchedule);
+router.delete("/:id", authMiddleware, deleteSchedule);
 
 /**
  * @swagger

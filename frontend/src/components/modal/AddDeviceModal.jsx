@@ -9,7 +9,9 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
     // Xóa dòng tạo ID ảo, để backend lo
     name: defaultName,
     type: "light",
-    location: "Phòng khách" // Thêm location vì backend có vẻ cần (hoặc chuỗi rỗng)
+    location: "Phòng khách",
+    mqtt_topic_pub: "",
+    mqtt_topic_sub: ""
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +68,26 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
             </select>
           </div>
           
+          <div>
+            <label className="text-sm font-semibold text-gray-700">MQTT Topic (PUB/SUB)</label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <input
+                type="text"
+                value={form.mqtt_topic_pub}
+                onChange={(e) => setForm({...form, mqtt_topic_pub: e.target.value})}
+                className="border border-gray-200 p-2 rounded-lg text-sm outline-none focus:border-blue-500"
+                placeholder="Topic gửi (PUB)..."
+              />
+              <input
+                type="text"
+                value={form.mqtt_topic_sub}
+                onChange={(e) => setForm({...form, mqtt_topic_sub: e.target.value})}
+                className="border border-gray-200 p-2 rounded-lg text-sm outline-none focus:border-blue-500"
+                placeholder="Topic nhận (SUB)..."
+              />
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium">Vị trí</label>
             <input

@@ -34,6 +34,7 @@ exports.updateSchedule = async (req, res) => {
   try {
     const { id } = req.params; // Đây là device_id từ route /api/schedules/:id
     const { name, power_status, control_mode, start_time, end_time } = req.body;
+    const userId = req.user.user_id;
 
     // 1. Cập nhật bảng devices trước
     await db.query(`
@@ -41,8 +42,9 @@ exports.updateSchedule = async (req, res) => {
       SET name = N'${name || 'Thiết bị'}', 
           control_mode = '${control_mode || 'manual'}',
           power_status = '${power_status || 'off'}'
-      WHERE device_id = ${id}
-    `);
+      WHERE device_id = :id AND user_id = :userId
+    `, { replacements: { id, userId } });
+
 
     // 2. Xử lý logic Schedule qua Service
     if (control_mode === 'schedule' && start_time && end_time) {
@@ -55,7 +57,7 @@ exports.updateSchedule = async (req, res) => {
     // 3. Ghi Log an toàn (Chống lỗi toUpperCase)
     const modeStr = String(control_mode || 'manual').toUpperCase();
     await logController.internalCreateLog({
-      userId: 1,
+      userId: userId,
       deviceId: id,
       actionType: 'UPDATE_CONFIG',
       description: `Chế độ: ${modeStr}`

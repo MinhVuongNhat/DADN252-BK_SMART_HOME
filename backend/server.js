@@ -72,6 +72,7 @@ const userRoutes = require("./routes/user.routes");
 const authRoutes = require('./routes/auth.routes');
 const sensorRoutes = require('./routes/sensor.routes');
 const logRoutes = require("./routes/log.routes");
+const scheduleRoutes = require("./routes/schedule.routes");
 // --- SWAGGER ---
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");

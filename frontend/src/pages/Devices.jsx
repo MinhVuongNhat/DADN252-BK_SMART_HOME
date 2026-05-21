@@ -33,17 +33,31 @@ export default function Devices() {
   const [openRuleModal, setOpenRuleModal] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
 
-  // Fetch dữ liệu thiết bị thực tế cho Device
-  const fetchDevices = async () => {
+  // Fetch toàn bộ dữ liệu (Thiết bị, Cảm biến, Luật)
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await getDevices();
-      
-      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
-      setDevices(data);
+      const [devRes, senRes, ruleRes] = await Promise.allSettled([
+        getDevices(),
+        axios.get("/sensors"),
+        axios.get("/automation"),
+      ]);
+
+      if (devRes.status === "fulfilled") {
+        const res = devRes.value;
+        const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
+        setDevices(data);
+      }
+
+      if (senRes.status === "fulfilled") {
+        setSensors(senRes.value.data || []);
+      }
+
+      if (ruleRes.status === "fulfilled") {
+        setRules(ruleRes.value.data || []);
+      }
     } catch (error) {
-      console.error("Lỗi khi load thiết bị:", error);
-      setDevices([]); // Đảm bảo luôn là mảng nếu lỗi
+      console.error("Lỗi khi tải dữ liệu tổng hợp:", error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +84,7 @@ export default function Devices() {
   const handleAddDevice = async (newDeviceForm) => {
     try {
       await createDevice(newDeviceForm);
-      await fetchDevices(); // Reload lại danh sách sau khi thêm
+      await fetchData(); // Reload lại toàn bộ dữ liệu
       setOpenAddDevice(false);
     } catch (error) {
       alert("Không thể thêm thiết bị. Vui lòng kiểm tra lại backend!");
@@ -81,7 +95,7 @@ export default function Devices() {
   const handleSaveSetting = async (updatedDevice) => {
     try {
       await updateDevice(updatedDevice.device_id, updatedDevice);
-      await fetchDevices(); // Reload để UI đồng bộ với DB
+      await fetchData(); 
       setOpenDeviceSetting(false);
       setSelectedDevice(null);
     } catch (error) {
@@ -94,7 +108,7 @@ export default function Devices() {
     if (window.confirm("Bạn có chắc chắn muốn xóa thiết bị này? Dữ liệu liên quan sẽ bị mất.")) {
       try {
         await deleteDevice(id);
-        await fetchDevices(); // Cập nhật lại danh sách sau khi xóa
+        await fetchData(); 
       } catch (error) {
         alert("Xóa thiết bị thất bại!");
       }
@@ -105,7 +119,7 @@ export default function Devices() {
   const handleToggle = async (id) => {
     try {
       await toggleDevice(id);
-      await fetchDevices(); // Cập nhật trạng thái mới nhất từ Server
+      await fetchData(); 
     } catch (error) {
       console.error("Lỗi toggle:", error);
     }
@@ -122,18 +136,6 @@ export default function Devices() {
         d.device_id === id ? { ...d, name } : d
       )
     );
-  };
-
-  const handleAddDevice = async (newDevice) => {
-    try {
-      await axios.post("/devices", newDevice);
-      // Gọi lại API sau khi thêm thành công để đảm bảo lấy list mới nhất
-      await fetchData();
-      setOpenAddDevice(false);
-    } catch (error) {
-      console.error("Lỗi thêm thiết bị:", error);
-      alert("Không thể thêm thiết bị! Vui lòng xem log backend.");
-    }
   };
 
   // ===== HANDLERS SENSOR =====

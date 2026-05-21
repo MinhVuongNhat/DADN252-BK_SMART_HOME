@@ -1,18 +1,20 @@
 const db = require("../config/db");
+const { QueryTypes } = require("sequelize");
 const logController = require("./log.controller");
 const client = require("../services/mqtt.service");
 
 // (Hàm getDevices giữ nguyên như lần fix trước)
 exports.getDevices = async (req, res) => {
   try {
-    const result = await db.query(`
+    const userId = req.user.user_id;
+    const deviceData = await db.query(`
       SELECT 
         device_id, name, type, location, power_status, control_mode, connection_status
       FROM devices
+      WHERE user_id = :userId
       ORDER BY created_at DESC
-    `);
+    `, { replacements: { userId }, type: QueryTypes.SELECT });
 
-    const deviceData = result.recordset || result.rows || (Array.isArray(result) ? result : []);
     res.json({ success: true, data: deviceData });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -22,20 +24,19 @@ exports.getDevices = async (req, res) => {
 exports.getDeviceById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.user_id;
     const result = await db.query(`
       SELECT d.*, s.start_time, s.end_time, s.is_active as schedule_active
       FROM devices d
       LEFT JOIN schedules s ON d.device_id = s.device_id
-      WHERE d.device_id = ${id}
-    `);
+      WHERE d.device_id = :id AND d.user_id = :userId
+    `, { replacements: { id, userId }, type: QueryTypes.SELECT });
 
-    // Xử lý mảng trả về an toàn
-    const data = result.recordset || result.rows || result;
-    if (!data || data.length === 0) {
+    if (!result || result.length === 0) {
       return res.status(404).json({ success: false, message: "Device not found" });
     }
 
-    res.json({ success: true, data: data[0] });
+    res.json({ success: true, data: result[0] });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -43,15 +44,18 @@ exports.getDeviceById = async (req, res) => {
 
 exports.createDevice = async (req, res) => {
   try {
-    // Thêm fallback an toàn tránh undefined
+    const userId = req.user.user_id;
     const name = req.body.name || 'Thiết bị mới';
     const type = req.body.type || 'light';
     const location = req.body.location || '';
 
     await db.query(`
       INSERT INTO devices (user_id, name, type, location, power_status, control_mode, connection_status)
-      VALUES (1, N'${name}', '${type}', N'${location}', 'off', 'manual', 'online')
-    `);
+      VALUES (:userId, :name, :type, :location, 'off', 'manual', 'online')
+    `, {
+      replacements: { userId, name, type, location },
+      type: QueryTypes.INSERT
+    });
 
     res.json({ success: true, message: "Tạo thiết bị thành công" });
   } catch (err) {
@@ -62,6 +66,7 @@ exports.createDevice = async (req, res) => {
 exports.updateDevice = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.user_id;
 
     // =========================
     // 1. Lấy dữ liệu request
@@ -84,11 +89,12 @@ exports.updateDevice = async (req, res) => {
         name = :name,
         power_status = :power_status,
         control_mode = :control_mode
-      WHERE device_id = :id
+      WHERE device_id = :id AND user_id = :userId
       `,
       {
         replacements: {
           id,
+          userId,
           name,
           power_status,
           control_mode,
@@ -104,6 +110,9 @@ exports.updateDevice = async (req, res) => {
       start_time &&
       end_time
     ) {
+      // Determine action_type for the schedule based on the device's power_status
+      const scheduleActionType = power_status === 'on' ? 'turn_on' : 'turn_off';
+
       await db.query(
         `
         IF EXISTS (
@@ -123,12 +132,14 @@ exports.updateDevice = async (req, res) => {
         BEGIN
           INSERT INTO schedules (
             device_id,
+            action_type, -- Thêm cột này
             start_time,
             end_time,
             is_active
           )
           VALUES (
             :id,
+            :scheduleActionType, -- Thêm giá trị này
             :start_time,
             :end_time,
             1
@@ -138,6 +149,7 @@ exports.updateDevice = async (req, res) => {
         {
           replacements: {
             id,
+            scheduleActionType, // Truyền biến vào replacements
             start_time,
             end_time,
           },
@@ -148,20 +160,21 @@ exports.updateDevice = async (req, res) => {
     // =========================
     // 4. Lấy MQTT topic
     // =========================
-    const [rows] = await db.query(
+    const deviceRows = await db.query(
       `
       SELECT 
         mqtt_topic_pub,
         mqtt_topic_sub
       FROM devices
-      WHERE device_id = :id
+      WHERE device_id = :id AND user_id = :userId
       `,
       {
-        replacements: { id },
+        replacements: { id, userId },
+        type: QueryTypes.SELECT
       }
     );
 
-    const device = rows[0];
+    const device = deviceRows[0];
 
     if (!device) {
       return res.status(404).json({
@@ -204,7 +217,7 @@ Payload: ${payload}
     // 6. Ghi log
     // =========================
     await logController.internalCreateLog({
-      userId: 1,
+      userId: userId,
       deviceId: id,
       actionType: "UPDATE_DEVICE",
       description:
@@ -234,13 +247,15 @@ Payload: ${payload}
 exports.deleteDevice = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.user_id;
 
     // SỬA LỖI FK CONSTRAINT: Xóa các bảng con trước
     // Nếu tương lai có bảng log_devices hoặc automation_actions, bạn cũng cần thêm lệnh DELETE ở đây
-    await db.query(`DELETE FROM schedules WHERE device_id = ${id}`);
+    await db.query(`DELETE FROM schedules WHERE device_id = :id`, { replacements: { id } });
     
     // Sau đó mới xóa thiết bị
-    await db.query(`DELETE FROM devices WHERE device_id = ${id}`);
+    await db.query(`DELETE FROM devices WHERE device_id = :id AND user_id = :userId`, 
+      { replacements: { id, userId } });
 
     res.json({ success: true, message: "Xóa thiết bị thành công" });
   } catch (err) {
@@ -253,6 +268,7 @@ exports.toggleDevice = async (req, res) => {
   try {
 
     const { id } = req.params;
+    const userId = req.user.user_id;
 
     // 1. Đảo trạng thái DB
     await db.query(`
@@ -262,17 +278,20 @@ exports.toggleDevice = async (req, res) => {
           WHEN power_status = 'on' THEN 'off'
           ELSE 'on'
         END
-      WHERE device_id = ${id}
-    `);
+      WHERE device_id = :id AND user_id = :userId
+    `, { replacements: { id, userId } });
 
     // 2. Lấy thông tin device
-    const result = await db.query(`
+    const rows = await db.query(`
       SELECT *
       FROM devices
-      WHERE device_id = ${id}
-    `);
+      WHERE device_id = :id AND user_id = :userId
+    `, { 
+      replacements: { id, userId },
+      type: QueryTypes.SELECT 
+    });
 
-    const device = result.recordset?.[0] || result[0];
+    const device = rows[0];
 
     if (!device) {
         throw new Error("Không tìm thấy thiết bị để điều khiển");
@@ -299,7 +318,7 @@ Payload: ${payload}
 
     // 6. Log
     await logController.internalCreateLog({
-      userId: 1,
+      userId: userId,
       deviceId: id,
       actionType: "TOGGLE_DEVICE",
       description: `Toggle ${device.name}`
@@ -328,9 +347,10 @@ exports.updateDeviceMode = async (req, res) => {
 
     await db.query(`
       UPDATE devices
-      SET control_mode = '${control_mode}'
-      WHERE device_id = ${id}
-    `);
+      SET control_mode = :control_mode
+      WHERE device_id = :id AND user_id = :userId
+    `, { replacements: { control_mode, id, userId } });
+
 
     res.json({
       success: true,
@@ -350,22 +370,26 @@ exports.updateDevicePower = async (req, res) => {
 
     const { id } = req.params;
     const { power_status } = req.body;
+    const userId = req.user.user_id;
 
     // Update DB
     await db.query(`
       UPDATE devices
-      SET power_status = '${power_status}'
-      WHERE device_id = ${id}
-    `);
+      SET power_status = :power_status
+      WHERE device_id = :id AND user_id = :userId
+    `, { replacements: { power_status, id, userId } });
 
     // Get topic
-    const result = await db.query(`
+    const rows = await db.query(`
       SELECT mqtt_topic_sub, mqtt_topic_pub
       FROM devices
-      WHERE device_id = ${id}
-    `);
+      WHERE device_id = :id AND user_id = :userId
+    `, { 
+      replacements: { id, userId },
+      type: QueryTypes.SELECT 
+    });
 
-    const device = result.recordset?.[0] || result[0];
+    const device = rows[0];
 
     if (!device) {
         throw new Error("Không tìm thấy thiết bị để cập nhật nguồn");

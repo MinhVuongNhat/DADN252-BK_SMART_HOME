@@ -14,7 +14,10 @@ export default function DeviceSettingModal({ device, onClose, onSave }) {
         // Ưu tiên lấy giờ từ database, nếu không có mới dùng mặc định
         start_time: device.start_time || "08:00",
         end_time: device.end_time || "17:00",
-        control_mode: device.control_mode || "manual"
+        control_mode: device.control_mode || "manual",
+        location: device.location || "",
+        mqtt_topic_pub: device.mqtt_topic_pub || "",
+        mqtt_topic_sub: device.mqtt_topic_sub || ""
       });
     }
   }, [device]);
@@ -62,6 +65,48 @@ export default function DeviceSettingModal({ device, onClose, onSave }) {
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Cấu hình</h2>
               <p className="text-gray-500 text-sm">Thiết lập cách thức hoạt động của thiết bị</p>
+            </div>
+
+            {/* Cấu hình vị trí & Topic */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Vị trí</label>
+                <input 
+                  value={form.location}
+                  onChange={(e) => setForm({...form, location: e.target.value})}
+                  className="w-full border-2 border-gray-100 p-2 rounded-lg text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Loại</label>
+                <select 
+                  value={form.type}
+                  onChange={(e) => setForm({...form, type: e.target.value})}
+                  className="w-full border-2 border-gray-100 p-2 rounded-lg text-sm"
+                >
+                  <option value="light">Đèn</option>
+                  <option value="fan">Quạt</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">MQTT PUB</label>
+                <input 
+                  value={form.mqtt_topic_pub}
+                  onChange={(e) => setForm({...form, mqtt_topic_pub: e.target.value})}
+                  className="w-full border-2 border-gray-100 p-2 rounded-lg text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">MQTT SUB</label>
+                <input 
+                  value={form.mqtt_topic_sub}
+                  onChange={(e) => setForm({...form, mqtt_topic_sub: e.target.value})}
+                  className="w-full border-2 border-gray-100 p-2 rounded-lg text-sm font-mono"
+                />
+              </div>
             </div>
 
             {/* Chọn Chế độ */}

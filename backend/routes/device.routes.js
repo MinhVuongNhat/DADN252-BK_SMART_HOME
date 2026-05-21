@@ -31,7 +31,7 @@ const {
  *       200:
  *         description: Device list fetched successfully
  */
-router.get("/", getDevices);
+router.get("/", authMiddleware, getDevices);
 
 /**
  * @swagger
@@ -63,7 +63,7 @@ router.get("/", getDevices);
  *       201:
  *         description: Device created successfully
  */
-router.post("/", createDevice);
+router.post("/", authMiddleware, createDevice);
 
 /**
  * @swagger
@@ -100,7 +100,7 @@ router.post("/", createDevice);
  *       200:
  *         description: Device updated successfully
  */
-router.put("/:id", updateDevice);
+router.put("/:id", authMiddleware, updateDevice);
 
 /**
  * @swagger
@@ -119,7 +119,7 @@ router.put("/:id", updateDevice);
  *       200:
  *         description: Device deleted successfully
  */
-router.delete("/:id", deleteDevice);
+router.delete("/:id", authMiddleware, deleteDevice);
 
 /**
  * @swagger
@@ -148,7 +148,7 @@ router.delete("/:id", deleteDevice);
  *       200:
  *         description: Device toggled successfully
  */
-router.post("/:id/toggle", toggleDevice);
+router.post("/:id/toggle", authMiddleware, toggleDevice);
 
 /**
  * @swagger
@@ -180,7 +180,7 @@ router.post("/:id/toggle", toggleDevice);
  *       200:
  *         description: Device mode updated successfully
  */
-router.patch("/:id/mode", updateDeviceMode);
+router.patch("/:id/mode", authMiddleware, updateDeviceMode);
 
 /**
  * @swagger
@@ -212,6 +212,6 @@ router.patch("/:id/mode", updateDeviceMode);
  *       200:
  *         description: Device power updated successfully
  */
-router.patch("/:id/power", updateDevicePower);
+router.patch("/:id/power", authMiddleware, updateDevicePower);
 
 module.exports = router;
