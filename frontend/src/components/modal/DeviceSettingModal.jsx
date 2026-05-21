@@ -4,6 +4,7 @@ import fanImg from "../../assets/fan.png";
 
 export default function DeviceSettingModal({ device, onClose, onSave }) {
   const [form, setForm] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Khởi tạo form khi mở Modal hoặc khi device thay đổi
   useEffect(() => {

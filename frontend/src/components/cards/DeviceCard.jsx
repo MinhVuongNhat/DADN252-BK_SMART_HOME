@@ -1,5 +1,7 @@
 import lightImg from "../../assets/led.png";
 import fanImg from "../../assets/fan.png";
+import { toggleDevice, updateDeviceMode } from "../../api/device.api";
+import { useState } from "react";
 
 export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
   const img = device.type === "light" ? lightImg : fanImg;
@@ -9,6 +11,33 @@ export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
     manual: "Thủ công",
     automation: "Tự động",
     schedule: "Lịch trình",
+  };
+
+  // 1. Xử lý Bật/Tắt thiết bị
+  const handleToggle = async () => {
+    try {
+      setLoading(true);
+      await toggleDevice(device.device_id); 
+      onRefresh(); // Gọi callback để trang Devices.jsx load lại dữ liệu mới
+    } catch (error) {
+      console.error("Lỗi khi điều khiển thiết bị:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. Xử lý Thay đổi chế độ
+  const handleModeChange = async (e) => {
+    const newMode = e.target.value;
+    try {
+      setLoading(true);
+      await updateDeviceMode(device.device_id, newMode);
+      onRefresh();
+    } catch (error) {
+      console.error("Lỗi khi đổi chế độ:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -66,21 +66,15 @@ const cors = require("cors");
 // Bỏ cái require { Server } ở đây vì socketService sẽ tự lo việc đó
 
 const sequelize = require("./config/db");
-
-// --- IMPORT ROUTES ---
 const dashboardRoutes = require("./routes/dashboard.routes");
 const deviceRoutes = require("./routes/device.routes");
 const userRoutes = require("./routes/user.routes");
 const authRoutes = require('./routes/auth.routes');
 const sensorRoutes = require('./routes/sensor.routes');
-const scheduleRoutes = require('./routes/schedule.routes');
-
+const logRoutes = require("./routes/log.routes");
 // --- SWAGGER ---
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
-
-
-const logRoutes = require("./routes/log.routes");
 
 require("./services/mqtt.service");
 // --- IMPORT SERVICES (DESIGN PATTERNS) ---

@@ -1,16 +1,27 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import axios from "../api/axios";
+import socket from "../socket/socket";
 import DeviceCard from "../components/cards/DeviceCard";
 import SensorCard from "../components/cards/SensorCard";
 import AddDeviceModal from "../components/modal/AddDeviceModal";
 import DeviceSettingModal from "../components/modal/DeviceSettingModal";
 import AddSensorModal from "../components/modal/AddSensorModal";
 import RuleModal from "../components/modal/RuleModal";
+// import các mock để demo
+import { mockDevices, mockSensors, mockRules, mockConditions, mockActions } from "../api/mock";
+import { 
+  getDevices, 
+  createDevice, 
+  updateDevice, 
+  deleteDevice, 
+  toggleDevice 
+} from "../api/device.api";
 
 export default function Devices() {
   const [tab, setTab] = useState("device");
   const [devices, setDevices] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [sensors, setSensors] = useState([]);
   const [rules, setRules] = useState([]);
 
@@ -22,69 +33,81 @@ export default function Devices() {
   const [openRuleModal, setOpenRuleModal] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
 
-  // 1. GỌI API ĐỘC LẬP (ĐÃ SỬA LỖI PROMISE.ALL)
-  const fetchData = async () => {
+  // Fetch dữ liệu thiết bị thực tế cho Device
+  const fetchDevices = async () => {
     try {
-      const devicesRes = await axios.get("/devices");
-      if (devicesRes.status === 200) {
-        // Dựa vào log: (2) [Array(11), 11], ta lấy phần tử index 0
-        const rawData = devicesRes.data.data || devicesRes.data; 
-        
-        // Kiểm tra nếu là mảng lồng mảng thì lấy cái bên trong
-        const actualDevices = Array.isArray(rawData[0]) ? rawData[0] : rawData;
-        
-        console.log("✅ Danh sách thiết bị thực tế:", actualDevices);
-        setDevices(actualDevices);
-      }
+      setLoading(true);
+      const response = await getDevices();
+      
+      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      setDevices(data);
     } catch (error) {
-      console.error("Lỗi khi tải Thiết bị:", error);
-    }
-
-    // B. Lấy danh sách Sensor từ Options
-    try {
-      const optionsRes = await axios.get("/automation/options");
-      if (optionsRes.status === 200) {
-        setSensors(optionsRes.data.sensors || []);
-      }
-    } catch (error) {
-      console.error("Lỗi khi tải Sensor Options:", error);
-    }
-
-    // C. Lấy danh sách Luật
-    try {
-      const rulesRes = await axios.get("/automation");
-      if (rulesRes.status === 200) {
-        setRules(Array.isArray(rulesRes.data) ? rulesRes.data : (rulesRes.data.data || []));
-      }
-    } catch (error) {
-      console.error("Lỗi khi tải Luật tự động:", error);
+      console.error("Lỗi khi load thiết bị:", error);
+      setDevices([]); // Đảm bảo luôn là mảng nếu lỗi
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Dữ liệu mock cho Sensor và Rules
   useEffect(() => {
     fetchData();
+
+    // Lắng nghe sự kiện cập nhật thiết bị để làm mới dữ liệu
+    const handleUpdate = () => {
+      console.log("🔄 Phát hiện thay đổi thiết bị, đang cập nhật...");
+      fetchData();
+    };
+
+    socket.on("device_update", handleUpdate);
+    return () => {
+      socket.off("device_update", handleUpdate);
+    };
   }, []);
 
-  // ===== HANDLERS THIẾT BỊ =====
-
-  const handleToggle = async (id, type) => {
+  // ===== HANDLERS =====
+  // ===== Device =====
+  const handleAddDevice = async (newDeviceForm) => {
     try {
-      await axios.post(`/devices/${id}/toggle`, { type });
-      await fetchData(); // Cập nhật lại UI sau khi bật/tắt
+      await createDevice(newDeviceForm);
+      await fetchDevices(); // Reload lại danh sách sau khi thêm
+      setOpenAddDevice(false);
     } catch (error) {
-      console.error("Lỗi toggle thiết bị:", error);
+      alert("Không thể thêm thiết bị. Vui lòng kiểm tra lại backend!");
     }
   };
 
+  // 3. Xử lý Cập nhật thiết bị (Dùng cho DeviceSettingModal)
+  const handleSaveSetting = async (updatedDevice) => {
+    try {
+      await updateDevice(updatedDevice.device_id, updatedDevice);
+      await fetchDevices(); // Reload để UI đồng bộ với DB
+      setOpenDeviceSetting(false);
+      setSelectedDevice(null);
+    } catch (error) {
+      alert("Cập nhật thất bại!");
+    }
+  };
+
+  // 4. Xử lý Xóa thiết bị
   const handleDeleteDevice = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa thiết bị này? Dữ liệu liên quan sẽ bị mất.")) {
       try {
-        await axios.delete(`/devices/${id}`);
-        await fetchData(); 
+        await deleteDevice(id);
+        await fetchDevices(); // Cập nhật lại danh sách sau khi xóa
       } catch (error) {
-        console.error("Lỗi xóa thiết bị:", error);
         alert("Xóa thiết bị thất bại!");
       }
+    }
+  };
+
+  // 5. Xử lý Bật/Tắt nhanh tại Card
+  const handleToggle = async (id) => {
+    try {
+      await toggleDevice(id);
+      await fetchDevices(); // Cập nhật trạng thái mới nhất từ Server
+    } catch (error) {
+      console.error("Lỗi toggle:", error);
     }
   };
 
@@ -93,16 +116,12 @@ export default function Devices() {
     setOpenDeviceSetting(true);
   };
 
-  const handleSaveSetting = async (updatedDevice) => {
-    try {
-      await axios.put(`/devices/${updatedDevice.device_id}`, updatedDevice);
-      await fetchData();
-      setOpenDeviceSetting(false);
-      setSelectedDevice(null);
-    } catch (error) {
-      console.error("Lỗi cập nhật thiết bị:", error);
-      alert("Cập nhật thất bại!");
-    }
+  const handleRename = (id, name) => {
+    setDevices(prev =>
+      prev.map(d =>
+        d.device_id === id ? { ...d, name } : d
+      )
+    );
   };
 
   const handleAddDevice = async (newDevice) => {
@@ -118,24 +137,39 @@ export default function Devices() {
   };
 
   // ===== HANDLERS SENSOR =====
-  const handleSensorDelete = (id) => {
+  const handleSensorDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa cảm biến này?")) {
-      setSensors((prev) => prev.filter((s) => (s.sensor_id || s.id) !== id));
+      try {
+        await axios.delete(`/sensors/${id}`);
+        await fetchData();
+      } catch (error) {
+        console.error("Lỗi xóa cảm biến:", error);
+      }
     }
   };
 
-  const handleSensorToggle = (id) => {
-    setSensors((prev) =>
-      prev.map((s) =>
-        s.sensor_id === id
-          ? { ...s, status: s.status === "active" ? "inactive" : "active" }
-          : s,
-      ),
-    );
+  const handleSensorToggle = async (id) => {
+    try {
+      // Tìm sensor hiện tại để lấy status
+      const sensor = sensors.find(s => s.sensor_id === id);
+      const newStatus = sensor.status === "active" ? "inactive" : "active";
+      
+      await axios.patch(`/sensors/${id}`, { status: newStatus });
+      await fetchData();
+    } catch (error) {
+      console.error("Lỗi cập nhật trạng thái cảm biến:", error);
+    }
   };
 
-  const handleAddSensor = (newSensor) => {
-    setSensors((prev) => [...prev, newSensor]);
+  const handleAddSensor = async (newSensor) => {
+    try {
+      await axios.post("/sensors", newSensor);
+      await fetchData();
+      setOpenAddSensor(false);
+    } catch (error) {
+      console.error("Lỗi thêm cảm biến:", error);
+      alert("Không thể thêm cảm biến!");
+    }
   };
 
   // ===== HANDLERS LUẬT TỰ ĐỘNG =====
@@ -180,9 +214,10 @@ export default function Devices() {
   const safeDevices = Array.isArray(devices) ? devices : [];
   const safeSensors = Array.isArray(sensors) ? sensors : [];
 
-  const totalDevices = safeDevices.length;
-  const totalFans = safeDevices.filter((d) => d.type === "fan").length;
-  const totalLights = safeDevices.filter((d) => d.type === "light").length;
+  // ===== COUNT =====
+  const totalDevices = devices.length;
+  const totalFans = devices.filter((d) => d.type === "fan").length;
+  const totalLights = devices.filter((d) => d.type === "light").length;
 
   const totalSensors = safeSensors.length;
   const totalTemp = safeSensors.filter((s) => s.type === "temperature").length;

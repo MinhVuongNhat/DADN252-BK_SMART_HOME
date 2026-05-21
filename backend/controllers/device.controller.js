@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const logController = require("./log.controller");
+const client = require("../services/mqtt.service");
 
 // (Hàm getDevices giữ nguyên như lần fix trước)
 exports.getDevices = async (req, res) => {
@@ -61,41 +62,172 @@ exports.createDevice = async (req, res) => {
 exports.updateDevice = async (req, res) => {
   try {
     const { id } = req.params;
-    // Lấy giá trị với fallback an toàn để chống lỗi CHECK CONSTRAINT
-    const name = req.body.name || 'Thiết bị';
-    const power_status = req.body.power_status || 'off'; 
-    const control_mode = req.body.control_mode || 'manual';
-    const start_time = req.body.start_time;
-    const end_time = req.body.end_time;
 
-    // 1. Cập nhật thiết bị
-    await db.query(`
+    // =========================
+    // 1. Lấy dữ liệu request
+    // =========================
+    const {
+      name = "Thiết bị",
+      power_status = "off",
+      control_mode = "manual",
+      start_time,
+      end_time,
+    } = req.body;
+
+    // =========================
+    // 2. Update device
+    // =========================
+    await db.query(
+      `
       UPDATE devices
-      SET name = N'${name}', power_status = '${power_status}', control_mode = '${control_mode}'
-      WHERE device_id = ${id}
-    `);
+      SET 
+        name = :name,
+        power_status = :power_status,
+        control_mode = :control_mode
+      WHERE device_id = :id
+      `,
+      {
+        replacements: {
+          id,
+          name,
+          power_status,
+          control_mode,
+        },
+      }
+    );
 
-    // 2. Xử lý schedule
-    if (control_mode === 'schedule' && start_time && end_time) {
-      await db.query(`
-        IF EXISTS (SELECT 1 FROM schedules WHERE device_id = ${id})
-          UPDATE schedules SET start_time = '${start_time}', end_time = '${end_time}', is_active = 1 WHERE device_id = ${id}
+    // =========================
+    // 3. Update schedule nếu cần
+    // =========================
+    if (
+      control_mode === "schedule" &&
+      start_time &&
+      end_time
+    ) {
+      await db.query(
+        `
+        IF EXISTS (
+          SELECT 1 
+          FROM schedules 
+          WHERE device_id = :id
+        )
+        BEGIN
+          UPDATE schedules
+          SET
+            start_time = :start_time,
+            end_time = :end_time,
+            is_active = 1
+          WHERE device_id = :id
+        END
         ELSE
-          INSERT INTO schedules (device_id, start_time, end_time, is_active) VALUES (${id}, '${start_time}', '${end_time}', 1)
-      `);
+        BEGIN
+          INSERT INTO schedules (
+            device_id,
+            start_time,
+            end_time,
+            is_active
+          )
+          VALUES (
+            :id,
+            :start_time,
+            :end_time,
+            1
+          )
+        END
+        `,
+        {
+          replacements: {
+            id,
+            start_time,
+            end_time,
+          },
+        }
+      );
     }
 
-    // 3. Ghi log
+    // =========================
+    // 4. Lấy MQTT topic
+    // =========================
+    const [rows] = await db.query(
+      `
+      SELECT 
+        mqtt_topic_pub,
+        mqtt_topic_sub
+      FROM devices
+      WHERE device_id = :id
+      `,
+      {
+        replacements: { id },
+      }
+    );
+
+    const device = rows[0];
+
+    if (!device) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy thiết bị",
+      });
+    }
+
+    // =========================
+    // 5. Publish MQTT
+    // =========================
+    if (power_status) {
+      // Ưu tiên publish topic PUB
+      const feed =
+        device.mqtt_topic_pub ||
+        device.mqtt_topic_sub;
+
+      if (!feed) {
+        throw new Error(
+          "Thiết bị chưa cấu hình MQTT topic"
+        );
+      }
+
+      const topic =
+        `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${feed}`;
+
+      const payload =
+        power_status === "on" ? "1" : "0";
+
+      console.log(`
+📤 MQTT Publish (from updateDevice)
+Topic: ${topic}
+Payload: ${payload}
+`);
+
+      client.publish(topic, payload);
+    }
+
+    // =========================
+    // 6. Ghi log
+    // =========================
     await logController.internalCreateLog({
       userId: 1,
       deviceId: id,
-      actionType: 'UPDATE_DEVICE',
-      description: `Cập nhật thiết bị ${name}: Trạng thái ${power_status}, Chế độ ${control_mode}`
+      actionType: "UPDATE_DEVICE",
+      description:
+        `Cập nhật thiết bị ${name}: ` +
+        `Trạng thái ${power_status}, ` +
+        `Chế độ ${control_mode}`,
     });
 
-    res.json({ success: true, message: "Cập nhật thành công" });
+    // =========================
+    // 7. Response
+    // =========================
+    return res.json({
+      success: true,
+      message: "Cập nhật thành công",
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("❌ updateDevice ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -119,38 +251,71 @@ exports.deleteDevice = async (req, res) => {
 // ĐÃ VIẾT LẠI HOÀN TOÀN HÀM TOGGLE
 exports.toggleDevice = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { type } = req.body; 
-    let actionDesc = "";
 
-    // Dùng SQL Server tự đảo trạng thái (Không cần Frontend gửi trạng thái lên)
-    if (type === "power") {
-      await db.query(`
-        UPDATE devices 
-        SET power_status = CASE WHEN power_status = 'on' THEN 'off' ELSE 'on' END 
-        WHERE device_id = ${id}
-      `);
-      actionDesc = `Thay đổi nguồn thiết bị ${id}`;
-    } else if (type === "mode") {
-      await db.query(`
-        UPDATE devices 
-        SET control_mode = CASE WHEN control_mode = 'automation' THEN 'manual' ELSE 'automation' END 
-        WHERE device_id = ${id}
-      `);
-      actionDesc = `Thay đổi chế độ thiết bị ${id}`;
+    const { id } = req.params;
+
+    // 1. Đảo trạng thái DB
+    await db.query(`
+      UPDATE devices
+      SET power_status =
+        CASE
+          WHEN power_status = 'on' THEN 'off'
+          ELSE 'on'
+        END
+      WHERE device_id = ${id}
+    `);
+
+    // 2. Lấy thông tin device
+    const result = await db.query(`
+      SELECT *
+      FROM devices
+      WHERE device_id = ${id}
+    `);
+
+    const device = result.recordset?.[0] || result[0];
+
+    if (!device) {
+        throw new Error("Không tìm thấy thiết bị để điều khiển");
     }
 
-    // Ghi log
+    // 3. MQTT topic
+    const topic =
+      `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${device.mqtt_topic_sub || device.mqtt_topic_pub}`;
+
+    // 4. Payload
+    const payload =
+      device.power_status === "on"
+        ? "1"
+        : "0";
+
+    // 5. Publish
+    client.publish(topic, payload);
+
+    console.log(`
+📤 MQTT Publish
+Topic: ${topic}
+Payload: ${payload}
+`);
+
+    // 6. Log
     await logController.internalCreateLog({
       userId: 1,
       deviceId: id,
-      actionType: 'TOGGLE_DEVICE',
-      description: actionDesc
+      actionType: "TOGGLE_DEVICE",
+      description: `Toggle ${device.name}`
     });
 
-    res.json({ success: true, message: "Thao tác thành công" });
+    res.json({
+      success: true,
+      message: "Điều khiển thiết bị thành công"
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -182,14 +347,50 @@ exports.updateDeviceMode = async (req, res) => {
 
 exports.updateDevicePower = async (req, res) => {
   try {
+
     const { id } = req.params;
     const { power_status } = req.body;
 
+    // Update DB
     await db.query(`
       UPDATE devices
       SET power_status = '${power_status}'
       WHERE device_id = ${id}
     `);
+
+    // Get topic
+    const result = await db.query(`
+      SELECT mqtt_topic_sub, mqtt_topic_pub
+      FROM devices
+      WHERE device_id = ${id}
+    `);
+
+    const device = result.recordset?.[0] || result[0];
+
+    if (!device) {
+        throw new Error("Không tìm thấy thiết bị để cập nhật nguồn");
+    }
+
+    const topicName = device.mqtt_topic_sub || device.mqtt_topic_pub;
+
+    // Full topic
+    const topic =
+`${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${topicName}`;
+
+    // Payload
+    const payload =
+      power_status === 'on'
+        ? '1'
+        : '0';
+
+    // Publish
+    client.publish(topic, payload);
+
+    console.log(`
+📤 MQTT Publish
+Topic: ${topic}
+Payload: ${payload}
+`);
 
     res.json({
       success: true,
@@ -197,9 +398,11 @@ exports.updateDevicePower = async (req, res) => {
     });
 
   } catch (err) {
+
     res.status(500).json({
       success: false,
       message: err.message
     });
+
   }
 };

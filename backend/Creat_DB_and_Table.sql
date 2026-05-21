@@ -271,7 +271,9 @@ BEGIN
     SELECT 
         s.schedule_id, 
         s.device_id, 
+        s.name,
         s.action_type, 
+        d.mqtt_topic_sub,
         d.mqtt_topic_pub
     FROM schedules s
     JOIN devices d ON s.device_id = d.device_id
