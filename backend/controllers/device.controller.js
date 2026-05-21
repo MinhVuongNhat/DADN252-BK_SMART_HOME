@@ -1,9 +1,6 @@
 const db = require("../config/db");
-<<<<<<< Updated upstream
-=======
 const logController = require("./log.controller");
 const client = require("../services/mqtt.service");
->>>>>>> Stashed changes
 
 exports.getDevices = async (req, res) => {
   try {
@@ -112,31 +109,6 @@ exports.createDevice = async (req, res) => {
 exports.updateDevice = async (req, res) => {
   try {
     const { id } = req.params;
-<<<<<<< Updated upstream
-    const {
-      name,
-      power_status,
-      control_mode
-    } = req.body;
-
-    await db.query(`
-      UPDATE devices
-      SET
-        name = N'${name}',
-        power_status = '${power_status}',
-        control_mode = '${control_mode}'
-      WHERE device_id = ${id}
-    `);
-
-    res.json({
-      success: true,
-      message: "Cập nhật thành công"
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-=======
 
     // =========================
     // 1. Lấy dữ liệu request
@@ -302,7 +274,6 @@ Payload: ${payload}
     return res.status(500).json({
       success: false,
       message: err.message,
->>>>>>> Stashed changes
     });
   }
 };
@@ -330,36 +301,6 @@ exports.deleteDevice = async (req, res) => {
 
 exports.toggleDevice = async (req, res) => {
   try {
-<<<<<<< Updated upstream
-    const { id } = req.params;
-    const { type, mode } = req.body;
-
-    if (type === "power") {
-      await db.query(`
-        UPDATE devices
-        SET power_status =
-          CASE
-            WHEN power_status = 'on' THEN 'off'
-            ELSE 'on'
-          END
-        WHERE device_id = ${id}
-      `);
-    }
-
-    if (type === "mode") {
-      await db.query(`
-        UPDATE devices
-        SET control_mode = '${mode}'
-        WHERE device_id = ${id}
-      `);
-    }
-
-    res.json({
-      success: true,
-      message: "Toggle thành công"
-    });
-  } catch (err) {
-=======
 
     const { id } = req.params;
 
@@ -421,15 +362,10 @@ Payload: ${payload}
 
   } catch (err) {
 
->>>>>>> Stashed changes
     res.status(500).json({
       success: false,
       message: err.message
     });
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
   }
 };
 

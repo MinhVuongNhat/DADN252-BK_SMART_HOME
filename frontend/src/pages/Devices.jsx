@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
 import axios from "../api/axios";
-<<<<<<< Updated upstream
-import DeviceModal from "../components/modal/DeviceModal";
-=======
 import socket from "../socket/socket";
->>>>>>> Stashed changes
 import DeviceCard from "../components/cards/DeviceCard";
 import SensorCard from "../components/cards/SensorCard";
 import AddDeviceModal from "../components/modal/AddDeviceModal";
@@ -56,17 +52,6 @@ export default function Devices() {
 
   // Dữ liệu mock cho Sensor và Rules
   useEffect(() => {
-<<<<<<< Updated upstream
-    fetchDevices();
-    setSensors(mockSensors); // Dùng tạm mock cho sensor
-    // Logic gộp rules từ mock
-    const mergedRules = mockRules.map((rule) => ({
-      ...rule,
-      conditions: mockConditions.filter((c) => c.rule_id === rule.rule_id),
-      actions: mockActions.filter((a) => a.rule_id === rule.rule_id),
-    }));
-    setRules(mergedRules);
-=======
     fetchData();
 
     // Lắng nghe sự kiện cập nhật thiết bị để làm mới dữ liệu
@@ -79,7 +64,6 @@ export default function Devices() {
     return () => {
       socket.off("device_update", handleUpdate);
     };
->>>>>>> Stashed changes
   }, []);
 
   // ===== HANDLERS =====
@@ -141,10 +125,6 @@ export default function Devices() {
     );
   };
 
-<<<<<<< Updated upstream
-  // ===== Sensor =====
-  const handleSensorDelete = (id) => {
-=======
   const handleAddDevice = async (newDevice) => {
     try {
       await axios.post("/devices", newDevice);
@@ -159,7 +139,6 @@ export default function Devices() {
 
   // ===== HANDLERS SENSOR =====
   const handleSensorDelete = async (id) => {
->>>>>>> Stashed changes
     if (window.confirm("Bạn có chắc chắn muốn xóa cảm biến này?")) {
       try {
         await axios.delete(`/sensors/${id}`);
@@ -170,16 +149,6 @@ export default function Devices() {
     }
   };
 
-<<<<<<< Updated upstream
-  const handleSensorToggle = (id) => {
-    setSensors((prev) =>
-      prev.map((s) =>
-        s.sensor_id === id 
-          ? { ...s, status: s.status === "active" ? "inactive" : "active" } 
-          : s
-      )
-    );
-=======
   const handleSensorToggle = async (id) => {
     try {
       // Tìm sensor hiện tại để lấy status
@@ -191,7 +160,6 @@ export default function Devices() {
     } catch (error) {
       console.error("Lỗi cập nhật trạng thái cảm biến:", error);
     }
->>>>>>> Stashed changes
   };
 
   const handleAddSensor = async (newSensor) => {

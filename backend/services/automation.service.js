@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 const mqttService = require("./mqtt.service");
 const mqttConfig = require("../config/mqtt");
 const ConditionEvaluator = require("../utils/evaluator.strategy");
@@ -83,4 +81,3 @@ class AutomationService {
 }
 
 module.exports = new AutomationService();
->>>>>>> Stashed changes

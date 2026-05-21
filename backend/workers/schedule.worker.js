@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 require('dotenv').config(); // Cực kỳ quan trọng để đọc file .env
 const mqtt = require('mqtt');
 const cron = require('node-cron');
@@ -62,4 +60,3 @@ cron.schedule('* * * * *', async () => {
         console.error('❌ Lỗi Worker:', err.message);
     }
 });
->>>>>>> Stashed changes
