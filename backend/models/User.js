@@ -5,13 +5,17 @@ const User = sequelize.define(
   "User",
   {
     user_id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-    home_id: { type: DataTypes.BIGINT, allowNull: true }, // FK, tạm thời chưa join Home
+    home_id: { type: DataTypes.BIGINT, allowNull: true }, 
     avatar_url: {
       type: DataTypes.STRING(255),
       allowNull: true,
     },
     username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-    password_hash: { type: DataTypes.STRING(255), allowNull: false },
+    password_hash: { 
+      type: DataTypes.STRING(255), 
+      allowNull: false,
+      field: 'password_hash' 
+    },
     email: { type: DataTypes.STRING(100), unique: true },
     phone: { type: DataTypes.STRING(20) },
     role: {
@@ -35,7 +39,7 @@ const User = sequelize.define(
   }, {
   tableName: "users",
   timestamps: true,
-  createdAt: 'created_at', // Map đúng tên cột trong SQL
+  createdAt: 'created_at', 
   updatedAt: 'updated_at'
 });
 

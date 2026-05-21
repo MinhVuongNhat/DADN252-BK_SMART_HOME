@@ -1,12 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
+// 1. IMPORT CẢNH SÁT BẢO VỆ VÀO NÈ BÀ
+const authMiddleware = require("../middlewares/auth.middleware");
+
 const {
   getSchedulesByDevice,
   createSchedule,
   updateSchedule,
   deleteSchedule,
-  updateScheduleActive,
+  toggleSchedule,
 } = require("../controllers/schedule.controller");
 
 /**
@@ -33,7 +36,8 @@ const {
  *       200:
  *         description: Schedule list fetched successfully
  */
-router.get("/devices/:id/schedules", getSchedulesByDevice);
+// 2. CHÈN BẢO VỆ VÀO TỪNG ĐƯỜNG DẪN
+router.get("/devices/:id/schedules", authMiddleware, getSchedulesByDevice);
 
 /**
  * @swagger
@@ -168,6 +172,6 @@ router.delete("/:id", deleteSchedule);
  *       200:
  *         description: Schedule active state updated successfully
  */
-router.patch("/:id/active", updateScheduleActive);
+router.patch("/:id/active", authMiddleware, toggleSchedule);
 
 module.exports = router;

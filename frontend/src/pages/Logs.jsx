@@ -1,152 +1,138 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../layout/Sidebar";
-import { getLogs, getAlerts, resolveAlert } from "../api/log.api";
-import { mockLogs, mockAlerts } from "../api/mock";
+import axios from "../api/axios"; // Sử dụng instance axios đã cấu hình của bạn
 
 export default function Logs() {
   const [tab, setTab] = useState("logs");
-
   const [logs, setLogs] = useState([]);
-  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  // State phân trang & tìm kiếm
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
+  const PAGE_SIZE = 10;
 
-//  useEffect(() => {
-//    fetchData();
-//  }, []);
+  // Hàm fetch dữ liệu theo phong cách Dashboard
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Sử dụng allSettled để xử lý nhiều API song song (nếu sau này có thêm alerts)
+      const results = await Promise.allSettled([
+        axios.get("/logs", {
+          params: { 
+            page: page, 
+            limit: PAGE_SIZE, 
+            search: search 
+          },
+        }),
+        // Ví dụ: axios.get("/alerts") -> có thể thêm vào đây sau
+      ]);
+
+      // Xử lý kết quả của API Logs (vị trí index 0)
+      if (results[0].status === "fulfilled") {
+        const resData = results[0].value.data; // Đây là object { success, data, pagination }
+        
+        setLogs(resData.data || []);
+        setTotalPages(resData.pagination?.totalPages || 1);
+      } else {
+        console.error("Lỗi API Logs:", results[0].reason);
+      }
+
+    } catch (err) {
+      console.error("Lỗi hệ thống:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gọi lại khi đổi trang hoặc tìm kiếm
   useEffect(() => {
-    setLogs(mockLogs);
-    setAlerts(mockAlerts);
-  }, []);
+    fetchData();
+  }, [page, search]);
 
-  // xử lý resolve ngay trên state
-  const handleResolve = (id) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.alert_id === id ? { ...a, is_resolved: true } : a
-      )
-    );
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1); // Reset về trang 1 khi search
   };
-
-  // filter
-  const filteredLogs = logs.filter((l) =>
-    JSON.stringify(l).toLowerCase().includes(search.toLowerCase())
-  );
-
-  const filteredAlerts = alerts.filter((a) =>
-    JSON.stringify(a).toLowerCase().includes(search.toLowerCase())
-  );
-
-  // pagination local
-  const PAGE_SIZE = 5;
-
-  const paginate = (arr) => {
-    const start = (page - 1) * PAGE_SIZE;
-    return arr.slice(start, start + PAGE_SIZE);
-  };
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      (tab === "logs" ? filteredLogs.length : filteredAlerts.length) /
-        PAGE_SIZE
-    )
-  );
 
   return (
     <div className="flex">
       <Sidebar />
+      <div className="flex-1 p-6 bg-gray-100 min-h-screen">
+        <h1 className="text-2xl font-bold mb-4 text-gray-800">Lịch sử hoạt động</h1>
 
-      <div className="flex-1 p-6 bg-gray-100">
-        <h1 className="text-2xl font-bold mb-4">Lịch sử</h1>
-
-        {/* Tabs + Search */}
-        <div className="flex justify-between mb-4">
-          <div className="flex gap-6">
-            <Tab active={tab === "logs"} onClick={() => setTab("logs")}>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex gap-4">
+            <button 
+              className={`px-4 py-2 font-medium ${tab === "logs" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"}`}
+              onClick={() => setTab("logs")}
+            >
               Lịch sử
-            </Tab>
+            </button>
           </div>
 
-          <input
-            className="px-4 py-2 border rounded-lg"
-            placeholder="Tìm kiếm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="relative">
+            <input
+              className="pl-4 pr-10 py-2 border rounded-lg w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Tìm kiếm hành động..."
+              value={search}
+              onChange={handleSearchChange}
+            />
+          </div>
         </div>
 
-        {/* TABLE */}
-        <div className="bg-white rounded-lg shadow-sm">
-          {tab === "logs" ? (
-            <LogsTable data={paginate(filteredLogs)} />
-          ) : (
-            <AlertsTable
-              data={paginate(filteredAlerts)}
-              onResolve={handleResolve}
-            />
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+          
+          <LogsTable data={logs} />
+          
+          {logs.length === 0 && !loading && (
+            <div className="p-10 text-center text-gray-500">Không tìm thấy dữ liệu</div>
           )}
         </div>
 
-        {/* PAGINATION */}
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          setPage={setPage}
+        <Pagination 
+          page={page} 
+          totalPages={totalPages} 
+          setPage={setPage} 
         />
       </div>
     </div>
   );
 }
 
-// ===== COMPONENTS =====
-function Tab({ children, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pb-2 ${
-        active
-          ? "border-b-2 border-blue-500 text-blue-600 font-semibold"
-          : ""
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-// ===== TABLE LOGS =====
+// Sub-component Table để hiển thị dữ liệu từ Controller mới
 function LogsTable({ data }) {
   return (
-    <table className="w-full text-left">
-      <thead className="bg-gray-50 border-b">
+    <table className="w-full text-left border-collapse">
+      <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
         <tr>
-          <th className="p-3"></th>
-          <th className="p-3">Tiêu đề</th>
-          <th className="p-3">Thời gian</th>
-          <th className="p-3">Hành động</th>
-          <th className="p-3">Nguồn</th>
-          <th></th>
+          <th className="p-4 font-semibold">Thời gian</th>
+          <th className="p-4 font-semibold">Nguồn</th>
+          <th className="p-4 font-semibold">Hành động</th>
+          <th className="p-4 font-semibold">Mô tả</th>
         </tr>
       </thead>
-
-      <tbody>
+      <tbody className="divide-y divide-gray-100">
         {data.map((log) => (
-          <tr key={log.log_id} className="border-b hover:bg-gray-50">
-            <td className="p-3">
-              <input type="checkbox" />
+          <tr key={log.log_id} className="hover:bg-gray-50 transition-colors">
+            <td className="p-4 text-sm text-gray-600">
+              {new Date(log.created_at).toLocaleString('vi-VN')}
             </td>
-
-            <td className="p-3">{log.description}</td>
-
-            <td className="p-3">{formatTime(log.created_at)}</td>
-
-            <td className="p-3">{log.action_type}</td>
-
-            <td className="p-3">{log.device_name || "System"}</td>
-
-            <td className="p-3 text-gray-400 cursor-pointer">...</td>
+            <td className="p-4">
+              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                log.source_type === 'DEVICE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+              }`}>
+                {log.source || "System"}
+              </span>
+            </td>
+            <td className="p-4 text-sm font-medium text-gray-700">{log.action_type}</td>
+            <td className="p-4 text-sm text-gray-500">{log.description}</td>
           </tr>
         ))}
       </tbody>
@@ -154,48 +140,27 @@ function LogsTable({ data }) {
   );
 }
 
-// ===== PAGINATION =====
+// Component phân trang (Giữ nguyên logic bạn đã có)
 function Pagination({ page, totalPages, setPage }) {
-  const pages = [];
-
-  for (let i = 1; i <= totalPages; i++) {
-    pages.push(i);
-  }
-
+  if (totalPages <= 1) return null;
+  
   return (
-    <div className="flex justify-center gap-3 mt-4 text-sm">
-      <button
+    <div className="flex justify-center items-center gap-2 mt-6">
+      <button 
         disabled={page === 1}
-        onClick={() => setPage(page - 1)}
-        className="text-gray-500"
+        onClick={() => setPage(p => p - 1)}
+        className="px-3 py-1 rounded border disabled:opacity-50"
       >
-        Trang trước
+        Trước
       </button>
-
-      {pages.map((p) => (
-        <button
-          key={p}
-          onClick={() => setPage(p)}
-          className={`px-3 py-1 rounded ${
-            p === page ? "bg-blue-500 text-white" : ""
-          }`}
-        >
-          {p}
-        </button>
-      ))}
-
-      <button
+      <span className="text-sm font-medium">Trang {page} / {totalPages}</span>
+      <button 
         disabled={page === totalPages}
-        onClick={() => setPage(page + 1)}
-        className="text-blue-500"
+        onClick={() => setPage(p => p + 1)}
+        className="px-3 py-1 rounded border disabled:opacity-50"
       >
-        Trang sau
+        Sau
       </button>
     </div>
   );
-}
-
-// ===== HELPER =====
-function formatTime(time) {
-  return new Date(time).toLocaleString();
 }

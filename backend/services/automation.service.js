@@ -61,7 +61,7 @@ class AutomationService {
             const command = action.action_type === 'turn_on' ? 'ON' : 'OFF';
             
           
-            const pubTopic = `${mqttConfig.username}/feeds/${device.mqtt_topic_sub || device.mqtt_topic_pub || 'device-' + device.device_id}`;
+            const pubTopic = `${mqttConfig.username}/feeds/${device.mqtt_topic_pub || 'device-' + device.device_id}`;
             mqttService.publish(pubTopic, command);
 
         

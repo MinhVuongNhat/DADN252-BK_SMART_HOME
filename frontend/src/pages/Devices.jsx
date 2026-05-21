@@ -29,7 +29,6 @@ export default function Devices() {
   const [openAddDevice, setOpenAddDevice] = useState(false);
   const [openDeviceSetting, setOpenDeviceSetting] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
   const [openAddSensor, setOpenAddSensor] = useState(false);
   const [openRuleModal, setOpenRuleModal] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
@@ -173,89 +172,87 @@ export default function Devices() {
     }
   };
 
-  // ===== Auto Rule =====
-  const handleDeleteRule = (id) => {
-      if (window.confirm("Bạn có chắc muốn xóa luật này?")) {
-        setRules((prev) => prev.filter((r) => r.rule_id !== id));
+  // ===== HANDLERS LUẬT TỰ ĐỘNG =====
+  const handleDeleteRule = async (id) => {
+    if (window.confirm("Bạn có chắc muốn xóa luật này?")) {
+      try {
+        await axios.delete(`/automation/${id}`); 
+        await fetchData(); 
+      } catch (error) {
+        console.error("Lỗi xóa luật", error);
       }
-    };
+    }
+  };
 
-    const handleEditRule = (rule) => {
-      setSelectedRule(rule);
-      setOpenRuleModal(true);
-    };
+  const handleEditRule = (rule) => {
+    setSelectedRule(rule);
+    setOpenRuleModal(true);
+  };
 
-    const handleAddRule = () => {
-      setSelectedRule(null);
-      setOpenRuleModal(true);
-    };
+  const handleAddRule = () => {
+    setSelectedRule(null);
+    setOpenRuleModal(true);
+  };
 
-    const handleSaveRule = (rule) => {
-      if (rules.find((r) => r.rule_id === rule.rule_id)) {
-        // Cập nhật luật cũ
-        setRules((prev) => prev.map((r) => (r.rule_id === rule.rule_id ? rule : r)));
+  const handleSaveRule = async (formData) => {
+    try {
+      if (selectedRule) {
+        await axios.put(`/automation/${selectedRule.rule_id}`, formData);
       } else {
-        // Thêm luật mới
-        setRules((prev) => [...prev, rule]);
+        await axios.post("/automation", formData);
       }
-    };
+      await fetchData();
+      setOpenRuleModal(false);
+      setSelectedRule(null);
+    } catch (error) {
+      console.error("Lỗi khi lưu luật:", error);
+      alert("Không thể lưu luật! Bạn kiểm tra lại xem Backend có đang chạy không.");
+    }
+  };
+
+  // ===== COUNT BẢO VỆ CHỐNG LỖI =====
+  const safeDevices = Array.isArray(devices) ? devices : [];
+  const safeSensors = Array.isArray(sensors) ? sensors : [];
 
   // ===== COUNT =====
   const totalDevices = devices.length;
   const totalFans = devices.filter((d) => d.type === "fan").length;
   const totalLights = devices.filter((d) => d.type === "light").length;
 
-  const totalSensors = sensors.length;
-  const totalTemp = sensors.filter((s) => s.type === "temperature").length;
-  const totalLightSensor = sensors.filter((s) => s.type === "light").length;
+  const totalSensors = safeSensors.length;
+  const totalTemp = safeSensors.filter((s) => s.type === "temperature").length;
+  const totalLightSensor = safeSensors.filter((s) => s.type === "light").length;
 
   return (
     <div className="flex">
       <Sidebar />
 
       <div className="flex-1 p-6 bg-gray-100">
-        {/* TITLE */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Quản lý thiết bị</h1>
         </div>
 
-        {/* TABS */}
         <div className="flex justify-between items-center mb-6 border-b pb-2">
           <div className="flex gap-6 mb-6">
-            <Tab active={tab === "device"} onClick={() => setTab("device")}>
-              Thiết bị
-            </Tab>
-            <Tab active={tab === "sensor"} onClick={() => setTab("sensor")}>
-              Cảm biến
-            </Tab>
-            <Tab active={tab === "automation"} onClick={() => setTab("automation")}>
-              Luật tự động
-            </Tab>
+            <Tab active={tab === "device"} onClick={() => setTab("device")}>Thiết bị</Tab>
+            <Tab active={tab === "sensor"} onClick={() => setTab("sensor")}>Cảm biến</Tab>
+            <Tab active={tab === "automation"} onClick={() => setTab("automation")}>Luật tự động</Tab>
           </div>
 
           {tab === "device" && (
-            <button 
-            onClick={() => setOpenAddDevice(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
+            <button onClick={() => setOpenAddDevice(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
               + Thêm thiết bị
             </button>
           )}
 
           {tab === "sensor" && (
-            <button 
-            onClick={() => setOpenAddSensor(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
+            <button onClick={() => setOpenAddSensor(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
               + Thêm cảm biến
             </button>
           )}
 
           {tab === "automation" && (
-            <button 
-              onClick={handleAddRule}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
+            <button onClick={handleAddRule} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
               + Thêm luật mới
             </button>
           )}
@@ -271,31 +268,29 @@ export default function Devices() {
                 { title: "Tổng số đèn", value: totalLights },
               ]}
             />
-
-          <Grid>
-            {devices.map((d) => (
-              <DeviceCard
-                key={d.device_id}
-                device={d}
-                onToggle={handleToggle}
-                onDelete={handleDeleteDevice}
-                onSetting={handleOpenSetting}
-              />
-            ))}
-          </Grid>
+            <Grid>
+              {safeDevices.map((d, index) => (
+                <DeviceCard
+                  // Sử dụng device_id làm key, nếu không có thì dùng index để tránh lỗi React
+                  key={d.device_id || `device-${index}`} 
+                  device={d}
+                  onToggle={handleToggle}
+                  onDelete={handleDeleteDevice} // Lúc này d.device_id sẽ không còn undefined
+                  onSetting={handleOpenSetting}
+                />
+              ))}
+            </Grid>
           </>
         )}
 
-        {/* Modal Thêm Mới */}
         {openAddDevice && (
-          <AddDeviceModal 
-            onClose={() => setOpenAddDevice(false)} 
+          <AddDeviceModal
+            onClose={() => setOpenAddDevice(false)}
             onSave={handleAddDevice}
-            currentCount={devices.length}
+            currentCount={safeDevices.length}
           />
         )}
 
-        {/* Modal Cài Đặt */}
         {openDeviceSetting && (
           <DeviceSettingModal
             device={selectedDevice}
@@ -314,26 +309,24 @@ export default function Devices() {
                 { title: "Ánh sáng", value: totalLightSensor },
               ]}
             />
-
-          <Grid>
-            {sensors.map((s) => (
-              <SensorCard
-                key={s.sensor_id}
-                sensor={s}
-                onToggle={handleSensorToggle} // Truyền thêm toggle
-                onDelete={handleSensorDelete}
-              />
-            ))}
-          </Grid>
+            <Grid>
+              {safeSensors.map((s) => (
+                <SensorCard
+                  key={s.sensor_id}
+                  sensor={s}
+                  onToggle={handleSensorToggle}
+                  onDelete={handleSensorDelete}
+                />
+              ))}
+            </Grid>
           </>
         )}
 
-        {/* Modal Thêm Sensor */}
         {openAddSensor && (
           <AddSensorModal
             onClose={() => setOpenAddSensor(false)}
             onSave={handleAddSensor}
-            currentCount={sensors.length}
+            currentCount={safeSensors.length}
           />
         )}
 
@@ -341,21 +334,23 @@ export default function Devices() {
         {tab === "automation" && (
           <AutomationList
             rules={rules}
-            sensors={sensors}
-            devices={devices}
+            sensors={safeSensors}
+            devices={safeDevices}
             onDelete={handleDeleteRule}
             onEdit={handleEditRule}
           />
         )}
       </div>
 
-      {/* Modal dùng chung cho Thêm/Sửa Rule */}
       {openRuleModal && (
         <RuleModal
           rule={selectedRule}
-          sensors={sensors}
-          devices={devices}
-          onClose={() => setOpenRuleModal(false)}
+          sensors={safeSensors}
+          devices={safeDevices}
+          onClose={() => {
+            setOpenRuleModal(false);
+            setSelectedRule(null);
+          }}
           onSave={handleSaveRule}
         />
       )}
@@ -363,14 +358,10 @@ export default function Devices() {
   );
 }
 
+// ... CÁC COMPONENT CON (Tab, StatRow, Grid, AutomationList) GIỮ NGUYÊN BÊN DƯỚI ...
 function Tab({ children, active, onClick }) {
   return (
-    <button
-      onClick={onClick}
-      className={`pb-2 ${
-        active ? "border-b-2 border-blue-500 text-blue-600 font-semibold" : ""
-      }`}
-    >
+    <button onClick={onClick} className={`pb-2 ${active ? "border-b-2 border-blue-500 text-blue-600 font-semibold" : ""}`}>
       {children}
     </button>
   );
@@ -390,16 +381,20 @@ function StatRow({ data }) {
 }
 
 function Grid({ children }) {
-  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{children}</div>;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {children}
+    </div>
+  );
 }
 
 function AutomationList({ rules, sensors, devices, onEdit, onDelete }) {
   return (
     <div className="space-y-4">
       {rules.map((r) => (
-        <div key={r.rule_id} className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition">
+        <div key={r.rule_id} className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg text-gray-800">{r.name}</h3>
+            <h3 className="font-bold text-lg">{r.name}</h3>
             <span className={`px-3 py-1 text-xs font-bold rounded-full ${r.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
               {r.is_active ? "ĐANG CHẠY" : "ĐÃ TẮT"}
             </span>
@@ -408,7 +403,7 @@ function AutomationList({ rules, sensors, devices, onEdit, onDelete }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="bg-gray-50 p-3 rounded-lg">
               <span className="text-gray-500 block mb-1">Điều kiện (NẾU)</span>
-              {r.conditions.map((c, i) => {
+              {r.AutomationConditions?.map((c, i) => {
                 const sensor = sensors.find((s) => s.sensor_id === c.sensor_id);
                 return (
                   <div key={i} className="font-medium">
@@ -420,7 +415,7 @@ function AutomationList({ rules, sensors, devices, onEdit, onDelete }) {
 
             <div className="bg-gray-50 p-3 rounded-lg">
               <span className="text-gray-500 block mb-1">Thực thi (THÌ)</span>
-              {r.actions.map((a, i) => {
+              {r.AutomationActions?.map((a, i) => {
                 const device = devices.find((d) => d.device_id === a.device_id);
                 return (
                   <div key={i} className="font-medium text-blue-600">
@@ -432,16 +427,10 @@ function AutomationList({ rules, sensors, devices, onEdit, onDelete }) {
           </div>
 
           <div className="flex gap-2 mt-4 border-t pt-4">
-            <button 
-              onClick={() => onEdit(r)}
-              className="px-4 py-1.5 bg-gray-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg text-sm transition"
-            >
+            <button onClick={() => onEdit(r)} className="px-4 py-1.5 bg-gray-100 text-blue-600 rounded-lg">
               Chỉnh sửa
             </button>
-            <button 
-              onClick={() => onDelete(r.rule_id)}
-              className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm transition"
-            >
+            <button onClick={() => onDelete(r.rule_id)} className="px-4 py-1.5 bg-red-50 text-red-600 rounded-lg">
               Xóa luật
             </button>
           </div>

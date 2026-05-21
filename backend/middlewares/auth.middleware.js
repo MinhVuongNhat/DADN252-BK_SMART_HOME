@@ -1,22 +1,33 @@
-const jwt = require('jsonwebtoken');
+// middlewares/auth.middleware.js
+const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
-    try {
-        // Lấy token từ header Authorization
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
-        if (!token) return res.status(401).json({ message: "Vui lòng đăng nhập!" });
-
-        // Dùng chung SECRET_KEY và giải mã đúng Object Thắng đã ký (sign)
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key_nhom_6');
-        
-        // Gán thông tin vào req.user để dùng cho Sensor API
-        // decoded lúc này sẽ có dạng: { user_id: ..., role: ..., iat: ..., exp: ... }
-        req.user = decoded; 
-        
-        next();
-    } catch (error) {
-        res.status(403).json({ message: "Phiên làm việc hết hạn!" });
+    if (!token) {
+      console.log("❌ Không tìm thấy token trong header");
+      return res.status(401).json({ message: "Vui lòng đăng nhập!" });
     }
+
+    // Kiểm tra kĩ SECRET_KEY
+    const SECRET = process.env.JWT_SECRET || "secret_key_nhom_6";
+    const decoded = jwt.verify(token, SECRET);
+
+
+    req.user = decoded;
+
+    next();
+  } catch (error) {
+    // In lỗi chi tiết ra console của Backend (Terminal)
+    console.error("❌ Lỗi xác thực JWT:", error.message);
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(403).json({ message: "Token đã hết hạn!" });
+    }
+    res
+      .status(403)
+      .json({ message: "Phiên làm việc hết hạn hoặc Token không hợp lệ!" });
+  }
 };

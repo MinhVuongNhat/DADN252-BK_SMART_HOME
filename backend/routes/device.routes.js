@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
+// 1. IMPORT CẢNH SÁT BẢO VỆ VÀO
+const authMiddleware = require("../middlewares/auth.middleware"); 
+
 const {
   getDevices,
   createDevice,

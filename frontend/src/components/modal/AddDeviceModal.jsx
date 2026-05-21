@@ -6,10 +6,10 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
   const defaultName = `Thiết bị ${(currentCount + 1).toString().padStart(2, '0')}`;
   
   const [form, setForm] = useState({
+    // Xóa dòng tạo ID ảo, để backend lo
     name: defaultName,
     type: "light",
-    power_status: "off",
-    control_mode: "manual",
+    location: "Phòng khách" // Thêm location vì backend có vẻ cần (hoặc chuỗi rỗng)
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +65,17 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
               <option value="fan">Quạt</option>
             </select>
           </div>
+          
+          <div>
+            <label className="text-sm font-medium">Vị trí</label>
+            <input
+              type="text"
+              value={form.location}
+              onChange={(e) => setForm({...form, location: e.target.value})}
+              className="w-full border p-2 rounded mt-1 outline-blue-500"
+              placeholder="Ví dụ: Phòng khách..."
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-8">
@@ -76,9 +87,11 @@ export default function AddDeviceModal({ onClose, onSave, currentCount }) {
             Hủy
           </button>
           <button 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={() => { 
+                // Gửi form đi
+                onSave(form); 
+            }}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
           >
             {isSubmitting ? "Đang lưu..." : "Xác nhận thêm"}
           </button>

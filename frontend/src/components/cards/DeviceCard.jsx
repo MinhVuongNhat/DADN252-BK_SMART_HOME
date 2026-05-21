@@ -6,7 +6,12 @@ import { useState } from "react";
 export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
   const img = device.type === "light" ? lightImg : fanImg;
   const isOn = device.power_status === "on";
-  const isAuto = device.control_mode === "automation";
+
+  const modeLabels = {
+    manual: "Thủ công",
+    automation: "Tự động",
+    schedule: "Lịch trình",
+  };
 
   // 1. Xử lý Bật/Tắt thiết bị
   const handleToggle = async () => {
@@ -36,56 +41,57 @@ export default function DeviceCard({ device, onSetting, onDelete, onToggle }) {
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm">
-      <h3 className="font-semibold mb-3">{device.name}</h3>
-
-      <div className="flex justify-center mb-4">
-        <img src={img} className="w-16 h-16 object-contain" />
-      </div>
-
-      <Toggle
-        label="Bật/Tắt"
-        status={device.power_status === "on"}
-        onClick={() => onToggle(device.device_id, "power")}
-      />
-
-      <Toggle
-        label="Tự động"
-        status={device.control_mode === "automation"}
-        onClick={() => onToggle(device.device_id, "auto")}
-      />
-
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={() => onSetting(device)}
-          className="flex-1 bg-gray-200 rounded py-1"
+    <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="font-bold text-lg text-gray-800">{device.name}</h3>
+          <p className="text-xs text-gray-400 uppercase tracking-wider">{device.type}</p>
+        </div>
+        
+        {/* Đã sửa thẻ span thành thẻ button để CÓ THỂ BẤM ĐƯỢC */}
+        <button 
+          onClick={() => onToggle(device.device_id, 'power')}
+          className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase cursor-pointer hover:opacity-80 transition-opacity ${
+            isOn ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
+          }`}
         >
-          Cài đặt
-        </button>
-
-        <button
-          onClick={() => onDelete(device.device_id)}
-          className="flex-1 bg-red-500 text-white rounded py-1"
-        >
-          Xóa
+          {isOn ? "● Đang bật" : "○ Đang tắt"}
         </button>
       </div>
-    </div>
-  );
-}
 
-function Toggle({ label, status, onClick }) {
-  return (
-    <div className="flex justify-between items-center mb-2">
-      <span>{label}</span>
+      <div className="flex justify-center my-6">
+        <img 
+          src={img} 
+          className={`w-20 h-20 object-contain transition-opacity ${isOn ? "opacity-100" : "opacity-40"}`} 
+        />
+      </div>
 
-      <div
-        onClick={onClick}
-        className={`w-12 h-6 rounded-full flex items-center px-1 cursor-pointer transition ${
-          status ? "bg-blue-500 justify-end" : "bg-gray-300"
-        }`}
-      >
-        <div className="w-5 h-5 bg-white rounded-full"></div>
+      <div className="flex flex-col gap-3">
+        <div className="text-sm text-gray-500 bg-gray-50 py-2 px-3 rounded-lg flex justify-between items-center">
+          <span>Chế độ:</span>
+          {/* Nút nhỏ để click đổi nhanh chế độ */}
+          <button 
+            onClick={() => onToggle(device.device_id, 'mode')}
+            className="font-medium text-blue-600 hover:underline"
+          >
+            {modeLabels[device.control_mode]}
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onSetting(device)}
+            className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-medium rounded-lg py-2 transition-colors"
+          >
+            Cài đặt
+          </button>
+          <button
+            onClick={() => onDelete(device.device_id)}
+            className="px-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors"
+          >
+            <i className="fa-regular fa-trash-can"></i> Xóa
+          </button>
+        </div>
       </div>
     </div>
   );
