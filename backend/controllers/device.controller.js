@@ -163,6 +163,7 @@ exports.updateDevice = async (req, res) => {
     const deviceRows = await db.query(
       `
       SELECT 
+        type,
         mqtt_topic_pub,
         mqtt_topic_sub
       FROM devices
@@ -201,16 +202,8 @@ exports.updateDevice = async (req, res) => {
       const topic =
         `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${feed}`;
 
-      const payload =
-        power_status === "on" ? "1" : "0";
-
-      console.log(`
-📤 MQTT Publish (from updateDevice)
-Topic: ${topic}
-Payload: ${payload}
-`);
-
-      client.publish(topic, payload);
+      // Truyền thêm device.type để mqtt.service tự map 3/0 (quạt) hoặc 9/1 (đèn)
+      client.publish(topic, power_status, device.type);
     }
 
     // =========================
@@ -301,20 +294,8 @@ exports.toggleDevice = async (req, res) => {
     const topic =
       `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${device.mqtt_topic_sub || device.mqtt_topic_pub}`;
 
-    // 4. Payload
-    const payload =
-      device.power_status === "on"
-        ? "1"
-        : "0";
-
-    // 5. Publish
-    client.publish(topic, payload);
-
-    console.log(`
-📤 MQTT Publish
-Topic: ${topic}
-Payload: ${payload}
-`);
+    // 4. Publish với device type
+    client.publish(topic, device.power_status, device.type);
 
     // 6. Log
     await logController.internalCreateLog({
@@ -381,7 +362,7 @@ exports.updateDevicePower = async (req, res) => {
 
     // Get topic
     const rows = await db.query(`
-      SELECT mqtt_topic_sub, mqtt_topic_pub
+      SELECT type, mqtt_topic_sub, mqtt_topic_pub
       FROM devices
       WHERE device_id = :id AND user_id = :userId
     `, { 
@@ -401,20 +382,9 @@ exports.updateDevicePower = async (req, res) => {
     const topic =
 `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${topicName}`;
 
-    // Payload
-    const payload =
-      power_status === 'on'
-        ? '1'
-        : '0';
-
-    // Publish
-    client.publish(topic, payload);
-
-    console.log(`
-📤 MQTT Publish
-Topic: ${topic}
-Payload: ${payload}
-`);
+    // Sửa lỗi biến mqttService thành client (do require bên trên) 
+    // và truyền device.type
+    client.publish(topic, power_status, device.type);
 
     res.json({
       success: true,

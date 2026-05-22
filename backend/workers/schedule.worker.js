@@ -3,6 +3,7 @@ const mqtt = require('mqtt');
 const cron = require('node-cron');
 const { Log, Device } = require('../models');
 const sequelize = require('../config/db');
+const mqttService = require('../services/mqtt.service');
 
 // Phải có username và password (Key) thì Adafruit mới cho kết nối
 const client = mqtt.connect(process.env.MQTT_BROKER, {
@@ -25,17 +26,14 @@ cron.schedule('* * * * *', async () => {
 
         if (schedulesToRun && schedulesToRun.length > 0) {
             for (const schedule of schedulesToRun) {
-                const payload = schedule.action_type === 'turn_on' ? '1' : '0';
-                
                 // Sử dụng topic_sub từ kết quả query (SP_Process_Schedules cần JOIN để lấy cột này)
                 const mqtt_topic = schedule.mqtt_topic_sub || schedule.mqtt_topic_pub;
                 
                 if (mqtt_topic) {
-                    const topic =
-                    `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${mqtt_topic}`;
-
-                    client.publish(topic, payload);
-                    console.log(`🚀 Thực thi: ${schedule.name} -> ${payload}`);
+                    const topic = `${process.env.ADAFRUIT_AIO_USERNAME}/feeds/${mqtt_topic}`;
+                    
+                    // Gọi qua service để tự động map 3/0 hoặc 9/1 dựa trên device_type
+                    mqttService.publish(topic, schedule.action_type, schedule.device_type);
 
                     // CẬP NHẬT TRẠNG THÁI THIẾT BỊ TRONG DB
                     await Device.update(

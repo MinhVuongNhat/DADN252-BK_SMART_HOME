@@ -3,8 +3,8 @@ const mqtt = require('mqtt');
 const cron = require('node-cron');
 const { AutomationRule, Device, Sensor } = require('../models');
 const sequelize = require('../config/db');
+const mqttService = require('../services/mqtt.service');
 
-// 2. Kết nối MQTT để lắng nghe và điều khiển
 const client = mqtt.connect(process.env.MQTT_BROKER);
 
 client.on('connect', () => {
@@ -28,7 +28,7 @@ cron.schedule('* * * * *', async () => {
         
         results.forEach(schedule => {
             // Gửi lệnh MQTT dựa trên kết quả từ DB
-            client.publish(schedule.mqtt_topic_pub, schedule.action_type === 'turn_on' ? '1' : '0');
+            mqttService.publish(schedule.mqtt_topic_pub, schedule.action_type, schedule.device_type);
             console.log(`🚀 Đã thực thi lịch trình: ${schedule.name}`);
         });
     } catch (err) {

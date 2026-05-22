@@ -273,6 +273,7 @@ BEGIN
         s.device_id, 
         s.name,
         s.action_type, 
+        d.type AS device_type,
         d.mqtt_topic_sub,
         d.mqtt_topic_pub
     FROM schedules s

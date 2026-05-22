@@ -63,10 +63,24 @@ class DataService {
       const deviceId = match[1];
       let parsedData = data;
       try { parsedData = JSON.parse(data); } catch(e) {}
+      
+      const device = await Device.findByPk(deviceId);
+      if (!device) return;
+
+      const rawValue = parsedData.power_status || parsedData.status || data;
+      let powerStatus = 'off';
+
+      if (device.type === 'fan') {
+        powerStatus = (rawValue == '3' || rawValue == 'on') ? 'on' : 'off';
+      } else if (device.type === 'light') {
+        powerStatus = (rawValue == '9' || rawValue == 'on') ? 'on' : 'off';
+      } else {
+        powerStatus = (rawValue == '1' || rawValue == 'on') ? 'on' : 'off';
+      }
 
       await Device.update(
         {
-          power_status: parsedData.power_status || parsedData.status || data,
+          power_status: powerStatus,
           connection_status: "online",
           last_seen: new Date(),
         },

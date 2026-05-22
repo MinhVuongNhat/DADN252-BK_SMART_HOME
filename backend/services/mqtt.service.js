@@ -60,11 +60,19 @@ class MQTTService {
     }
   }
 
-  publish(topic, command) {
+  publish(topic, command, deviceType = 'light') {
     if (this.client && this.client.connected) {
-      
-      const payload =
-        command === "ON" || command === "on" || command === "3" ? "3" : "0";
+      const isOn = command === "ON" || command === "on" || command === "turn_on" || command === "1" || command === "3" || command === "9";
+      let payload = "0";
+
+      if (deviceType === 'fan') {
+        payload = isOn ? "3" : "0";
+      } else if (deviceType === 'light') {
+        payload = isOn ? "9" : "1";
+      } else {
+        // Mặc định cho các thiết bị khác nếu có
+        payload = isOn ? "1" : "0";
+      }
 
       this.client.publish(topic, payload, { qos: 1 }, (err) => {
         if (err) {
