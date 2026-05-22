@@ -62,7 +62,7 @@ class AutomationService {
             
           
             const pubTopic = `${mqttConfig.username}/feeds/${device.mqtt_topic_pub || 'device-' + device.device_id}`;
-            mqttService.publish(pubTopic, command);
+            mqttService.publish(pubTopic, command, device.type);
 
         
             await Log.create({
