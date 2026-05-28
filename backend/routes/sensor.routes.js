@@ -6,5 +6,6 @@ const authMiddleware = require('../middlewares/auth.middleware'); // Dùng lại
 // Thêm authMiddleware để chỉ user đã login mới xem được sensor
 router.get('/latest/:type', authMiddleware, sensorController.getLatest);
 router.get('/history/:type', authMiddleware, sensorController.getHistory);
+router.get('/', authMiddleware, sensorController.getAllSensors);
 
 module.exports = router;

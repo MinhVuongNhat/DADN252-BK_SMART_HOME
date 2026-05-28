@@ -35,7 +35,8 @@ const Signup = () => {
         username: username,
         email: email,
         password: password,
-        phone: phone
+        phone: phone,
+        homeName: homeName
         // Tạm thời chưa gửi homeName vì Model chưa có cột này
     };
 

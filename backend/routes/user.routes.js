@@ -9,7 +9,9 @@ const {
   getProfile,
   updateProfile,
   updateAvatar,
-  changePassword
+  changePassword,
+  forgotPassword,
+  resetPassword
 } = require("../controllers/user.controller");
 
 /**
@@ -39,5 +41,6 @@ router.put(
   authMiddleware,
   changePassword
 );
-
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 module.exports = router;

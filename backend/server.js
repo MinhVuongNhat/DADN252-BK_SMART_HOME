@@ -58,7 +58,7 @@
 //   console.log("Server running on port " + PORT);
 // });
 
-require("dotenv").config();
+require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 const path = require("path");
 const express = require("express");
 const http = require("http");
@@ -77,9 +77,6 @@ const sensorRoutes = require('./routes/sensor.routes');
 // --- SWAGGER ---
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
-
-const userRoutes = require("./routes/user.routes");
-const authRoutes = require('./routes/auth.routes');
 
 const logRoutes = require("./routes/log.routes");
 

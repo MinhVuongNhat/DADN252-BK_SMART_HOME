@@ -2,10 +2,10 @@ const { Sequelize } = require("sequelize");
 
 const sequelize = new Sequelize(
   "smarthome",      // đúng với database trong script SQL
-  "sManager",       // login SQL Server
-  "Nhom6251",       // password
+  "thang_smarthome",       // login SQL Server
+  "123456",       // password
   {
-    host: "ThuyHien",   // tên SQL Server instance
+    host: "127.0.0.1",   // tên SQL Server instance
     dialect: "mssql",
     port: 1433,
 

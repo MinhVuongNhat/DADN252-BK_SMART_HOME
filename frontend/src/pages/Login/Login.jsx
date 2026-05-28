@@ -78,8 +78,8 @@ const Login = () => {
           <div className="redirect-signup">
             Chưa là thành viên ? <Link to="/signup">THAM GIA NGAY</Link>
           </div>
-          <div className="forget pass">
-              <p>Quên mật khẩu ?.</p>
+          <div className="forget-pass">
+              <Link to="/forgot-password">Quên mật khẩu ? </Link>
           </div>
 
           <div className="form-footer">
