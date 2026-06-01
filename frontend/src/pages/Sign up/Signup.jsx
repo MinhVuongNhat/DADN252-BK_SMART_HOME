@@ -26,8 +26,36 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
 
+    // 1. Validate Email định dạng chuẩn (Regex)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert("Email không đúng định dạng! Vui lòng kiểm tra lại.");
+        return;
+    }
+
+    // 🔥 2. CHÈN ĐOẠN VALIDATE SỐ ĐIỆN THOẠI 10 SỐ VÀO ĐÂY:
+    // Regex này bắt buộc phải bắt đầu bằng số 0, theo sau là các đầu số 3,5,7,8,9 và đủ 10 số
+    const phoneRegex = /^(0[3|5|7|8|9])([0-9]{8})$/;
+    if (!phoneRegex.test(phone)) {
+        alert("Số điện thoại không hợp lệ! SĐT phải gồm đúng 10 chữ số và bắt đầu bằng các đầu số (03, 05, 07, 08, 09).");
+        return;
+    }
+
+    // 3. Validate độ dài mật khẩu (Ít nhất 6 ký tự)
+    if (password.length < 6) {
+        alert("Mật khẩu phải có độ dài từ 6 ký tự trở lên!");
+        return;
+    }
+
+    // 4. Validate khớp mật khẩu
     if (password !== confirmPassword) {
-        alert("Mật khẩu không khớp!");
+        alert("Mật khẩu xác nhận không khớp!");
+        return;
+    }
+
+    // 5. Kiểm tra các trường bắt buộc không được để trống (Thắng có thể bỏ check phone ở đây vì Regex trên đã thầu luôn rồi)
+    if (!username.trim() || !phone.trim() || !email.trim() || !password.trim() || !homeName.trim()) {
+        alert("Vui lòng điền đầy đủ");
         return;
     }
 
