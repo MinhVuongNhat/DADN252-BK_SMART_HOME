@@ -16,6 +16,11 @@ const ResetPassword = () => {
 
     const handleReset = async (e) => {
         e.preventDefault();
+            if (newPassword.length < 6) {
+            setMessage("Mật khẩu mới phải có ít nhất 6 ký tự!");
+            setStatusType("error");
+            return;
+        }
         
         if (newPassword !== confirmPassword) {
             setMessage("Mật khẩu xác nhận không trùng khớp!");
