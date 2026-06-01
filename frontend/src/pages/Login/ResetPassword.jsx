@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useEffect } from 'react';
 
 const ResetPassword = () => {
     const [searchParams] = useSearchParams();
@@ -43,7 +44,9 @@ const ResetPassword = () => {
             setIsLoading(false);
         }
     };
-
+    useEffect(() => {
+    document.title = "Quên mật khẩu | BK SmartHome";
+     }, []);
     return (
         <div style={styles.container}>
             <div style={styles.card}>

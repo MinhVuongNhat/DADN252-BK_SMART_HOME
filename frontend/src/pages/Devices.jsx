@@ -164,7 +164,9 @@ export default function Devices() {
   const totalSensors = sensors.length;
   const totalTemp = sensors.filter((s) => s.type === "temperature").length;
   const totalLightSensor = sensors.filter((s) => s.type === "light").length;
-
+    useEffect(() => {
+    document.title = "Quản lí thiết bị | BK SmartHome";
+  }, []);
   return (
     <div className="flex">
       <Sidebar />

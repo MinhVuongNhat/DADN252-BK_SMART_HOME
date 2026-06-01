@@ -3,6 +3,7 @@ import './Signup.css'
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from "react"; // Nhớ thêm useState ở đầu nhé
 import axios from "axios";
+import { useEffect } from 'react';
 
 import homeicon from '../../assets/home-icon.svg'
 import mailicon from '../../assets/icon-mail.svg'
@@ -54,6 +55,9 @@ const Signup = () => {
         alert("Lỗi đăng ký: " + (error.response?.data?.message || "Server bận rồi"));
     }
 };
+useEffect(() => {
+    document.title = "Đăng Ký | BK SmartHome";
+  }, []);
   return (
     <div className="signup-container">
       <div className="signup-body">

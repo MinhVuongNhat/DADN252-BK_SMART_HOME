@@ -167,76 +167,76 @@ exports.resetPassword = async (req, res) => {
     // 1. Chỉ đón đúng token và newPassword từ Frontend React gửi qua
     const { token, newPassword } = req.body;
 
-    console.log("\n=======================================================");
-    console.log("📥 [BACKEND RECEIVE] Có request gửi đến API Reset Password");
-    console.log("👉 Token nhận được:", token ? `|${token.substring(0, 30)}...|` : "❌ TRỐNG TRƠN!");
-    console.log("👉 Mật khẩu mới nhận được (newPassword):", newPassword ? `|${newPassword}|` : "❌ TRỐNG TRƠN!");
-    console.log("=======================================================");
+    // console.log("\n=======================================================");
+    // console.log("📥 [BACKEND RECEIVE] Có request gửi đến API Reset Password");
+    // console.log("👉 Token nhận được:", token ? `|${token.substring(0, 30)}...|` : "❌ TRỐNG TRƠN!");
+    // console.log("👉 Mật khẩu mới nhận được (newPassword):", newPassword ? `|${newPassword}|` : "❌ TRỐNG TRƠN!");
+    // console.log("=======================================================");
 
     try {
         // 1. Giải mã thô để lấy user_id bên trong token ra trước
-        console.log("🔍 [BƯỚC 1] Đang tiến hành decode thô Token...");
+        // console.log("🔍 [BƯỚC 1] Đang tiến hành decode thô Token...");
         const decoded = jwt.decode(token);
         if (!decoded) {
-            console.log("❌ [LỖI BƯỚC 1] jwt.decode thất bại! Token không đúng định dạng JWT.");
+            // console.log("❌ [LỖI BƯỚC 1] jwt.decode thất bại! Token không đúng định dạng JWT.");
             return res.status(400).json({ message: "Token không hợp lệ!" });
         }
-        console.log("✅ [THÀNH CÔNG BƯỚC 1] Decode thô mượt mà. Dữ liệu bên trong token:", decoded);
+        // console.log("✅ [THÀNH CÔNG BƯỚC 1] Decode thô mượt mà. Dữ liệu bên trong token:", decoded);
 
         // 2. Tìm user trong DB để lấy password_hash cũ ra làm chìa khóa đối chiếu
-        console.log(`🔍 [BƯỚC 2] Đang tìm User có ID = [${decoded.user_id}] trong SQL Server...`);
+        // console.log(`🔍 [BƯỚC 2] Đang tìm User có ID = [${decoded.user_id}] trong SQL Server...`);
         const user = await User.findByPk(decoded.user_id);
         if (!user) {
-            console.log(`❌ [LỖI BƯỚC 2] Không tìm thấy User nào có ID = [${decoded.user_id}] trong Database của nhóm!`);
+            // console.log(`❌ [LỖI BƯỚC 2] Không tìm thấy User nào có ID = [${decoded.user_id}] trong Database của nhóm!`);
             return res.status(400).json({ message: "Yêu cầu không hợp lệ hoặc tài khoản không tồn tại!" });
         }
-        console.log("✅ [THÀNH CÔNG BƯỚC 2] Tìm thấy người dùng!");
-        console.log("   - Username:", user.username);
-        console.log("   - Email hiện tại:", user.email);
-        console.log("   - Pass Hash hiện tại trong DB:", user.password_hash.substring(0, 15) + "...");
+        // console.log("✅ [THÀNH CÔNG BƯỚC 2] Tìm thấy người dùng!");
+        // console.log("   - Username:", user.username);
+        // console.log("   - Email hiện tại:", user.email);
+        // console.log("   - Pass Hash hiện tại trong DB:", user.password_hash.substring(0, 15) + "...");
 
         // 3. Tái tạo lại khóa bí mật và xác thực xem token có bị fake hay hết hạn 15 phút chưa
-        console.log("🔍 [BƯỚC 3] Đang tái tạo Secret Key động và tiến hành verify token...");
+        // console.log("🔍 [BƯỚC 3] Đang tái tạo Secret Key động và tiến hành verify token...");
         const secretKey = (process.env.JWT_SECRET || "thang_smart_home_2026_bi_mat") + user.password_hash;
         
         // Tiến hành verify thực tế
         jwt.verify(token, secretKey); 
-        console.log("✅ [THÀNH CÔNG BƯỚC 3] Token chuẩn chỉnh 100%! Không bị fake, không hết hạn.");
+        // console.log("✅ [THÀNH CÔNG BƯỚC 3] Token chuẩn chỉnh 100%! Không bị fake, không hết hạn.");
 
         // 4. Băm mật khẩu mới và cập nhật trực tiếp
-        console.log("🔍 [BƯỚC 4] Đang kiểm tra dữ liệu mật khẩu để tiến hành băm (hash)...");
+        // console.log("🔍 [BƯỚC 4] Đang kiểm tra dữ liệu mật khẩu để tiến hành băm (hash)...");
         if (!newPassword) {
-            console.log("❌ [LỖI BƯỚC 4] Biến 'newPassword' trống rỗng! Không có mật khẩu để băm.");
+            // console.log("❌ [LỖI BƯỚC 4] Biến 'newPassword' trống rỗng! Không có mật khẩu để băm.");
             return res.status(400).json({ message: "Vui lòng nhập mật khẩu mới!" });
         }
 
-        console.log(`   -> Tiến hành băm mật khẩu: |${newPassword}| bằng bcrypt...`);
+        // console.log(`   -> Tiến hành băm mật khẩu: |${newPassword}| bằng bcrypt...`);
         const salt = await bcrypt.genSalt(10);
         user.password_hash = await bcrypt.hash(newPassword, salt); // Dùng đúng biến newPassword
         
-        console.log("💾 [BƯỚC 5] Đang thực thi lệnh user.save() để ghi đè vào SQL Server...");
+        // console.log("💾 [BƯỚC 5] Đang thực thi lệnh user.save() để ghi đè vào SQL Server...");
         await user.save();
-        console.log("🎉 [THÀNH CÔNG RỰC RỠ] Đã cập nhật mật khẩu mới vào DB thành công!");
+        // console.log("🎉 [THÀNH CÔNG RỰC RỠ] Đã cập nhật mật khẩu mới vào DB thành công!");
 
         res.json({ message: "Đổi mật khẩu thành công!" });
 
     } catch (err) {
-        console.log("\n================ 🚨 JWT VERIFY CATCH ERROR ================");
-        console.error("❌ Tên loại lỗi gặp phải (Error Name):", err.name);
-        console.error("❌ Chi tiết thông báo lỗi (Error Message):", err.message);
+        // console.log("\n================ 🚨 JWT VERIFY CATCH ERROR ================");
+        // console.error("❌ Tên loại lỗi gặp phải (Error Name):", err.name);
+        // console.error("❌ Chi tiết thông báo lỗi (Error Message):", err.message);
 
         // Kiểm tra xem lỗi có phải do lệch múi giờ hay hết hạn thật không
         try {
             const decodedTho = jwt.decode(token);
             if (decodedTho && decodedTho.exp) {
-                console.log("⏱️ Thời gian Token hết hạn (Unix):", decodedTho.exp);
-                console.log("📅 Đổi sang giờ VN:", new Date(decodedTho.exp * 1000).toLocaleString("vi-VN"));
-                console.log("💻 Thời gian máy tính của Thắng hiện tại:", new Date().toLocaleString("vi-VN"));
+                // console.log("⏱️ Thời gian Token hết hạn (Unix):", decodedTho.exp);
+                // console.log("📅 Đổi sang giờ VN:", new Date(decodedTho.exp * 1000).toLocaleString("vi-VN"));
+                // console.log("💻 Thời gian máy tính của Thắng hiện tại:", new Date().toLocaleString("vi-VN"));
             }
         } catch (e) {
             console.log("Không giải mã sâu thêm được.");
         }
-        console.log("===========================================================\n");
+        // console.log("===========================================================\n");
 
         if (err.name === 'TokenExpiredError') {
             return res.status(400).json({ message: "Liên kết đặt lại mật khẩu đã hết hạn (quá 15 phút)!" });

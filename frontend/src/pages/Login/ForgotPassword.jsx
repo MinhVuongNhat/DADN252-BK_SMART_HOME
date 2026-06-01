@@ -2,6 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom"; // Thêm Link để người dùng có đường lui về trang Login
 import './ForgotPassword.css'
+import { useEffect } from 'react';
+
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState("");
@@ -26,7 +28,10 @@ const ForgotPassword = () => {
             setIsLoading(false); // Tắt trạng thái đợi
         }
     };
-
+    
+    useEffect(() => {
+    document.title = "Quên mật khẩu | BK SmartHome";
+     }, []);
     return (
         <div className="forgot-container">
             <div className="forgot-card">

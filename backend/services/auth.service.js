@@ -35,7 +35,7 @@ const signup = async (userData) => {
 const login = async (email, password) => {
     // 1. Tìm user theo email
     const user = await User.findOne({ where: { email } });
-    console.log("Dữ liệu User lấy lên:", user.get({ plain: true })); // <--- Thêm dòng này
+    // console.log("Dữ liệu User lấy lên:", user.get({ plain: true })); // <--- Thêm dòng này
     if (!user) throw new Error("Email không tồn tại!");
 
     // 2. So sánh mật khẩu (Giải mã bcrypt)

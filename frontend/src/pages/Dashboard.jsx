@@ -81,6 +81,9 @@ export default function Dashboard() {
       socket.off("sensor_update", handler);
     };
   }, []);
+  useEffect(() => {
+    document.title = "Trang chủ | BK SmartHome";
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
