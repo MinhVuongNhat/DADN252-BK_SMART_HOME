@@ -44,6 +44,7 @@ export default function Profile() {
   };
 
   useEffect(() => {
+    document.title = "Thông tin người dùng | BK SmartHome";
     fetchProfile();
   }, []);
 

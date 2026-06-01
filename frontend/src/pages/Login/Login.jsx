@@ -2,6 +2,7 @@ import React, { useState } from 'react'; // Phải có { useState } ở đây
 import './Login.css'
 import { Link, useNavigate } from 'react-router-dom'; // Phải có useNavigate ở đây
 import axios from "axios";
+import { useEffect } from 'react';
 
 import mailicon from '../../assets/icon-mail.svg'
 import lockicon from '../../assets/lock.svg'
@@ -37,6 +38,9 @@ const Login = () => {
       alert("Lỗi đăng nhập: " + (error.response?.data?.message || "Sai tài khoản hoặc mật khẩu"));
     }
   };
+  useEffect(() => {
+    document.title = "Đăng nhập | BK SmartHome";
+  }, []);
   return (
     <div className="login-container">
       <div className="login-body">
@@ -78,8 +82,8 @@ const Login = () => {
           <div className="redirect-signup">
             Chưa là thành viên ? <Link to="/signup">THAM GIA NGAY</Link>
           </div>
-          <div className="forget pass">
-              <p>Quên mật khẩu ?.</p>
+          <div className="forget-pass">
+              <Link to="/forgot-password">Quên mật khẩu ? </Link>
           </div>
 
           <div className="form-footer">

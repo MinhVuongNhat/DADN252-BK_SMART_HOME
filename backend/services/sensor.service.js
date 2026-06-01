@@ -27,4 +27,12 @@ const getSensorHistory = async (userId, type, limit = 20) => {
     });
 };
 
-module.exports = { getMySensors, getLatestValue, getSensorHistory };
+const getAllSensors = async (userId) => {
+    // Lấy tất cả sensor thuộc về user đang login
+    return await Sensor.findAll({
+        where: { user_id: userId },
+        attributes: ['sensor_id', 'name', 'type', 'status'] // Chọn các cột cần thiết
+    });
+}
+
+module.exports = { getMySensors, getLatestValue, getSensorHistory, getAllSensors };

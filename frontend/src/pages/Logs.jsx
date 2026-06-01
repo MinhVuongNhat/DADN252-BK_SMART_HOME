@@ -55,7 +55,9 @@ export default function Logs() {
     setSearch(e.target.value);
     setPage(1); // Reset về trang 1 khi search
   };
-
+    useEffect(() => {
+    document.title = "Lịch sử Logs | BK SmartHome";
+  }, []);
   return (
     <div className="flex">
       <Sidebar />
