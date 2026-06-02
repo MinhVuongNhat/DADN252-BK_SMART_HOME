@@ -30,18 +30,7 @@ export default function SensorCard({ sensor, onDelete, onToggle }) {
 
       <div>
         {/* QUAN TRỌNG: Phải truyền onClick cho Toggle */}
-        <Toggle 
-          label="Hoạt động" 
-          status={sensor.status === "active"} 
-          onClick={() => onToggle(sId)} 
-        />
-
-        <button
-          onClick={() => onDelete(sId)}
-          className="mt-3 w-full bg-red-500 hover:bg-red-600 text-white rounded py-1.5 transition-colors"
-        >
-          Xóa
-        </button>
+ 
       </div>
     </div>
   );

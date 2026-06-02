@@ -1,8 +1,7 @@
-import React, { useState } from 'react'; // Phải có { useState } ở đây
+import React, { useState, useEffect, useRef } from 'react'; // Khai báo thêm useRef ở đây
 import './Login.css'
-import { Link, useNavigate } from 'react-router-dom'; // Phải có useNavigate ở đây
+import { Link, useNavigate } from 'react-router-dom'; 
 import axios from "axios";
-import { useEffect } from 'react';
 
 import mailicon from '../../assets/icon-mail.svg'
 import lockicon from '../../assets/lock.svg'
@@ -13,8 +12,34 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const handleLogin = async (e) => { // Thêm async ở đây
-    e.preventDefault();
+
+  // 🔥 1. Tạo mảng các useRef để quản lý tiêu điểm của 2 ô input
+  const inputRefs = [
+    useRef(null), // Ô 0: Email
+    useRef(null)  // Ô 1: Mật khẩu
+  ];
+
+  // 🔥 2. Hàm xử lý bắt phím mũi tên Lên/Xuống
+  const handleKeyDown = (index, e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault(); // Ngăn cuộn trang mặc định
+      const nextIndex = (index + 1) % inputRefs.length; // Xuống ô tiếp theo (ô 0 xuống 1, ô 1 vòng lên 0)
+      inputRefs[nextIndex].current?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = (index - 1 + inputRefs.length) % inputRefs.length; // Lên ô phía trước
+      inputRefs[prevIndex].current?.focus();
+    }
+  };
+
+  const handleLogin = async (e) => { 
+    e.preventDefault(); // Nhận e từ form onSubmit
+
+    // Validate nhanh không để trống dữ liệu trước khi gửi
+    if (!email.trim() || !password.trim()) {
+      alert("Vui lòng nhập đầy đủ Email và Mật khẩu!");
+      return;
+    }
 
     try {
       // 1. Gửi email và password lên Backend để kiểm tra
@@ -38,9 +63,11 @@ const Login = () => {
       alert("Lỗi đăng nhập: " + (error.response?.data?.message || "Sai tài khoản hoặc mật khẩu"));
     }
   };
+
   useEffect(() => {
     document.title = "Đăng nhập | BK SmartHome";
   }, []);
+
   return (
     <div className="login-container">
       <div className="login-body">
@@ -55,26 +82,41 @@ const Login = () => {
         </div>
 
         {/* CỘT PHẢI */}
-        <div className="form-box-right">
+        {/* 🔥 3. Chuyển div thành thẻ FORM để bắt sự kiện phím ENTER tự động */}
+        <form className="form-box-right" onSubmit={handleLogin}>
           <div className="project-name">
             <h1>BK SMARTHOME CHÀO MỪNG QUAY LẠI.</h1>
             <p>ĐĂNG NHẬP ĐỂ TIẾP TỤC.</p>
           </div>
 
+          {/* 🔥 4. Đính ref và onKeyDown tương ứng cho mỗi ô input */}
           <div className="inputs">
             <div className="input">
               <img src={mailicon} alt="mail" className="mailicon" />
-              <input type="email" placeholder="Email" value={email} 
-                      onChange={(e) => setEmail(e.target.value)}/>
+              <input 
+                ref={inputRefs[0]}
+                type="email" 
+                placeholder="Email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(0, e)}
+              />
             </div>
             <div className="input">
               <img src={lockicon} alt="lock" className="lockicon" />
-              <input type="password" placeholder="Mật khẩu" value={password} 
-                      onChange={(e) => setPassword(e.target.value)} />
+              <input 
+                ref={inputRefs[1]}
+                type="password" 
+                placeholder="Mật khẩu" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                onKeyDown={(e) => handleKeyDown(1, e)}
+              />
             </div>
           </div>
 
-          <button className="btn-login" onClick={handleLogin}>
+          {/* 🔥 5. Thay đổi button thành type="submit" */}
+          <button type="submit" className="btn-login">
             Tiến đến tài khoản của tôi
             <img src={arrowright} alt="arrowright" className="arrowright" />
           </button>
@@ -95,11 +137,10 @@ const Login = () => {
               <p>Cần giúp đỡ?</p>
             </div>
           </div>
-        </div> {/* Đóng form-box-right */}
+        </form> {/* Đóng form */}
       </div> {/* Đóng login-body */}
     </div> 
   );
 };
 
 export default Login;
-

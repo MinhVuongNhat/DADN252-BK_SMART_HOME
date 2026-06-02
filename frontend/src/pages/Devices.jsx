@@ -32,6 +32,10 @@ export default function Devices() {
   const [openAddSensor, setOpenAddSensor] = useState(false);
   const [openRuleModal, setOpenRuleModal] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
+  //Quản lí sensors
+  const [selectedSensor, setSelectedSensor] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [openHistoryModal, setOpenHistoryModal] = useState(false);
 
   // Fetch toàn bộ dữ liệu (Thiết bị, Cảm biến, Luật)
   const fetchData = async () => {
@@ -173,6 +177,17 @@ export default function Devices() {
       alert("Không thể thêm cảm biến!");
     }
   };
+  const handleOpenHistory = async (type, title) => {
+    setSelectedSensor({ type, title });
+    setOpenHistoryModal(true);
+    try {
+      const res = await axios.get(`/sensors/history/${type}`);
+      setHistoryData(res.data || []);
+    } catch (err) {
+      console.error("Lỗi lấy lịch sử:", err);
+      setHistoryData([]);
+    }
+  };
 
   // ===== HANDLERS LUẬT TỰ ĐỘNG =====
   const handleDeleteRule = async (id) => {
@@ -247,11 +262,7 @@ export default function Devices() {
             </button>
           )}
 
-          {tab === "sensor" && (
-            <button onClick={() => setOpenAddSensor(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-              + Thêm cảm biến
-            </button>
-          )}
+
 
           {tab === "automation" && (
             <button onClick={handleAddRule} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -304,23 +315,127 @@ export default function Devices() {
         {/* ===== SENSOR ===== */}
         {tab === "sensor" && (
           <>
+            {/* Hàng thống kê số liệu cảm biến */}
             <StatRow
               data={[
-                { title: "Tổng cảm biến", value: totalSensors },
-                { title: "DHT20", value: totalTemp },
-                { title: "Ánh sáng", value: totalLightSensor },
+                { title: "Tổng số cảm biến", value: totalSensors },
+                { title: "DHT20 (Nhiệt độ/Độ ẩm)", value: totalTemp },
+                { title: "Cảm biến Ánh sáng", value: totalLightSensor },
               ]}
             />
-            <Grid>
-              {safeSensors.map((s) => (
-                <SensorCard
-                  key={s.sensor_id}
-                  sensor={s}
-                  onToggle={handleSensorToggle}
-                  onDelete={handleSensorDelete}
-                />
+            
+            <div className="mb-4 text-sm text-gray-500 font-medium uppercase">
+              💡 Mẹo: Bấm vào thẻ để xem đồ thị hoặc danh sách lịch sử đo chi tiết
+            </div>
+
+            {/* Danh sách các thẻ Card Cảm biến */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {safeSensors.map((s, index) => (
+                <div 
+                  key={s.sensor_id || `sensor-${index}`}
+                  onClick={() => handleOpenHistory(s.type || s.sensor_type, s.name)}
+                  className="cursor-pointer transform transition-all duration-300 hover:scale-105"
+                >
+                  <SensorCard
+                    sensor={s}
+                    onToggle={(id, e) => {
+                      e.stopPropagation(); // Ngăn nổi bọt trigger modal lịch sử khi gạt switch
+                      handleSensorToggle(id);
+                    }}
+                    onDelete={(id, e) => {
+                      e.stopPropagation(); // Ngăn nổi bọt trigger modal lịch sử khi bấm xóa
+                      handleSensorDelete(id);
+                    }}
+                  />
+                </div>
               ))}
-            </Grid>
+            </div>
+
+            {/* BẢNG CHI TIẾT TRẠNG THÁI (BÊ TỪ DASHBOARD SANG) */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mt-8 border">
+              <h2 className="text-lg font-bold text-gray-800 mb-4">Danh sách chi tiết trạng thái hoạt động</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-700 uppercase text-xs font-bold border-b">
+                      <th className="p-4">ID</th>
+                      <th className="p-4">Tên Cảm Biến</th>
+                      <th className="p-4">Loại</th>
+                      <th className="p-4">Trạng Thái</th>
+                      <th className="p-4">Cập nhật cuối</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {safeSensors.length > 0 ? (
+                      safeSensors.map((s) => (
+                        <tr key={s.sensor_id} className="hover:bg-blue-50 border-b transition-colors">
+                          <td className="p-4 font-mono text-sm">{s.sensor_id}</td>
+                          <td className="p-4 font-semibold">{s.name}</td>
+                          <td className="p-4 text-blue-600 font-medium">{s.type || s.sensor_type}</td>
+                          <td className="p-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {s.status === 'active' ? 'Online' : 'Offline'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-gray-500 text-sm">
+                            {s.last_seen ? new Date(s.last_seen).toLocaleString("vi-VN") : "Vừa xong"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="p-10 text-center text-gray-400">Hệ thống chưa ghi nhận cảm biến nào.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* MODAL POPUP XEM LỊCH SỬ KHI CLICK VÀO CARD */}
+            {openHistoryModal && selectedSensor && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                  <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                    <h2 className="text-xl font-bold text-gray-800">Lịch sử nhận tín hiệu: {selectedSensor.title}</h2>
+                    <button 
+                      onClick={() => { setOpenHistoryModal(false); setHistoryData([]); }} 
+                      className="text-gray-500 hover:text-red-500 text-2xl font-bold"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-6">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100 text-gray-700 text-xs uppercase font-bold border">
+                          <th className="p-3 border">Thời gian hệ thống nhận</th>
+                          <th className="p-3 border text-center">Giá trị log</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historyData.length > 0 ? (
+                          historyData.map((h, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="p-3 border text-gray-600 text-sm">
+                                {h.createdAt ? new Date(h.createdAt).toLocaleString("vi-VN") : new Date().toLocaleString("vi-VN")}
+                              </td>
+                              <td className="p-3 border text-center font-bold text-blue-600 text-base">
+                                {h.value} {selectedSensor.type === "temperature" ? "°C" : selectedSensor.type === "humidity" ? "%" : "lux"}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="2" className="p-6 text-center text-gray-400">Không tìm thấy dữ liệu log lịch sử của cảm biến này...</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
