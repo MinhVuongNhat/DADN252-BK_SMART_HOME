@@ -245,6 +245,7 @@ exports.deleteDevice = async (req, res) => {
     // SỬA LỖI FK CONSTRAINT: Xóa các bảng con trước
     // Nếu tương lai có bảng log_devices hoặc automation_actions, bạn cũng cần thêm lệnh DELETE ở đây
     await db.query(`DELETE FROM schedules WHERE device_id = :id`, { replacements: { id } });
+    await db.query(`DELETE FROM automation_actions WHERE device_id = :id`, { replacements: { id } });
     
     // Sau đó mới xóa thiết bị
     await db.query(`DELETE FROM devices WHERE device_id = :id AND user_id = :userId`, 

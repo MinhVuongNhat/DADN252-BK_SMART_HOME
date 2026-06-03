@@ -140,7 +140,7 @@ CREATE TABLE automation_conditions (
 CREATE TABLE automation_actions (
     action_id       BIGINT IDENTITY(1,1) PRIMARY KEY,
     rule_id         BIGINT NOT NULL FOREIGN KEY REFERENCES automation_rules(rule_id) ON DELETE CASCADE,
-    device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id),
+    device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id) ON DELETE CASCADE,
     action_type     NVARCHAR(50) NOT NULL, 
     target_value    DECIMAL(12,4),
     delay_seconds   INT DEFAULT 0
@@ -149,7 +149,7 @@ CREATE TABLE automation_actions (
 -- LỊCH TRÌNH
 CREATE TABLE schedules (
     schedule_id     BIGINT IDENTITY(1,1) PRIMARY KEY,
-    device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id),
+    device_id       BIGINT NOT NULL FOREIGN KEY REFERENCES devices(device_id) ON DELETE CASCADE,
     name            NVARCHAR(100),
     action_type     NVARCHAR(50) NOT NULL,
     target_value    DECIMAL(12,4), -- Đã thêm cột này để SP không báo lỗi
