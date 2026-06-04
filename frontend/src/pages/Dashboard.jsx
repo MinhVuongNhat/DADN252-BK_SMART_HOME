@@ -104,17 +104,10 @@ export default function Dashboard() {
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Ô 1: Tổng thiết bị */}
-              <StatCard title="Tổng thiết bị" value={summary.totalDevices} />
+              <StatCard title="Tổng số thiết bị" value={summary.totalDevices} />
               
               {/* Ô 2: Số cảm biến - SỬA LẠI ĐOẠN NÀY */}
-              <div 
-                onClick={handleOpenSensorList} 
-                className="w-full cursor-pointer transform transition-all hover:scale-105"
-                style={{ display: 'grid' }} 
-              >
-                {/* Biến cái div cha thành 1 grid nhỏ, nó sẽ ép StatCard tự động phình to 100% */}
-                <StatCard title="Số cảm biến" value={summary.totalSensors} />
-              </div>
+              <StatCard title="Tổng số sensors" value={summary.totalSensors} />
               
               {/* Ô 3: Đồng hồ hiển thị thời gian */}
               <TimeCard />
